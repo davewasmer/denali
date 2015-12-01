@@ -10,8 +10,8 @@ Denali is a framework that makes building robust JSON APIs simple. It borrows th
 
 There's a couple ways to get started using Denali:
 
-1. Dive right in and [learn how to build the ever-popular blog application](quickstart).
-2. Read more about [what makes Denali unique](why-denali).
+1. Dive right in and [learn how to build the ever-popular blog application](quickstart.md).
+2. Read more about [what makes Denali unique](why-denali.md).
 
 
 ```txt
