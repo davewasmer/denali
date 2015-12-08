@@ -28,7 +28,7 @@
     "babel-core": "^5.5.0",
     "gulp": "^3.6.0",
     "gulp-babel": "^5.1.0",
-    "gulp-coveralls": "^0.1.0",
+    "gulp-coveralls": "^0.1.4",
     "gulp-eslint": "^0.15.0",
     "gulp-exclude-gitignore": "^1.0.0",
     "gulp-istanbul": "^0.9.0",
