@@ -37,7 +37,7 @@
     "mocha": "^2.3.4",
     "must": "^0.13.1",
     "rimraf": "^2.4.2",
-    "watch": "^0.16.0"
+    "watch": "^0.17.0"
   },
   "scripts": {
     "prepublish": "in-publish && npm run lint && npm test && npm run coverage && npm run compile || echo ''",
