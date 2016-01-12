@@ -63,7 +63,7 @@
     "broccoli-lint-eslint": "^1.1.1",
     "broccoli-slow-trees": "^2.0.0",
     "broccoli-stew": "^1.2.0",
-    "broccoli-uglify-sourcemap": "^1.1.0",
+    "broccoli-uglify-sourcemap": "^1.1.1",
     "broccoli": "^1.0.0-beta.6",
     "chalk": "^1.1.1",
     "commander": "^2.9.0",
