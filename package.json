@@ -68,7 +68,7 @@
     "chalk": "^1.1.1",
     "commander": "^2.9.0",
     "compression": "^1.6.0",
-    "cookie-parser": "^1.4.0",
+    "cookie-parser": "^1.4.1",
     "copy-dereference": "^1.0.0",
     "core-object": "^1.1.0",
     "cors": "^2.7.1",
