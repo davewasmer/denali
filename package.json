@@ -100,6 +100,6 @@
     "rimraf": "^2.4.2",
     "supertest": "^1.1.0",
     "supertest-as-promised": "^2.0.2",
-    "trash": "^3.4.0"
+    "trash": "^3.4.1"
   }
 }
