@@ -73,7 +73,7 @@ The API server will automatically restart when you change make a change:
 $ denali server
 ```
 
-To learn more, check out [the docs](https://denalijs.github.com/denali).
+To learn more, check out [the docs](http://davewasmer.github.io/denali/).
 
 ## License
 
