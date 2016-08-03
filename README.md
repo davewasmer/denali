@@ -73,7 +73,7 @@ The API server will automatically restart when you change make a change:
 $ denali server
 ```
 
-To learn more, check out [the docs](https://denalijs.github.com/denali).
+To learn more, check out [the docs](http://denali.js.org/).
 
 ## License
 
@@ -83,13 +83,13 @@ MIT © [Dave Wasmer](http://davewasmer.com)
 [npm-url]: https://npmjs.org/package/denali
 [npm-image]: https://img.shields.io/npm/v/denali.svg?style=flat-square
 
-[travis-url]: https://travis-ci.org/davewasmer/denali
-[travis-image]: https://img.shields.io/travis/davewasmer/denali.svg?style=flat-square
+[travis-url]: https://travis-ci.org/denali-js/denali
+[travis-image]: https://img.shields.io/travis/denali-js/denali.svg?style=flat-square
 
-[coveralls-url]: https://coveralls.io/r/davewasmer/denali
-[coveralls-image]: https://img.shields.io/coveralls/davewasmer/denali.svg?style=flat-square
+[coveralls-url]: https://coveralls.io/r/denali-js/denali
+[coveralls-image]: https://img.shields.io/coveralls/denali-js/denali.svg?style=flat-square
 
-[depstat-url]: https://david-dm.org/davewasmer/denali
-[depstat-image]: https://david-dm.org/davewasmer/denali.svg?style=flat-square
+[depstat-url]: https://david-dm.org/denali-js/denali
+[depstat-image]: https://david-dm.org/denali-js/denali.svg?style=flat-square
 
 [download-badge]: http://img.shields.io/npm/dm/denali.svg?style=flat-square
