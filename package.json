@@ -44,11 +44,10 @@
     "build": "babel lib --out-dir dist --source-maps --ignore cli/blueprints/*/files/**",
     "prewatch": "trash dist && cp -r lib dist",
     "watch": "babel lib --out-dir dist --source-maps --ignore cli/blueprints/*/files/** --watch",
-    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "test": "NODE_ENV=test nyc mocha test/**/*.js test/*.js",
+    "coverage": "NODE_ENV=test nyc report --reporter=text-lcov | coveralls",
     "lint": "eslint lib test",
-    "postcoverage": "rimraf coverage",
-    "prepublish": "in-publish && npm run lint && npm test && npm run build || not-in-publish",
-    "test": "NODE_ENV=test nyc --reporter=html --reporter=text mocha"
+    "prepublish": "in-publish && npm run lint && npm test && npm run build || not-in-publish"
   },
   "license": "MIT",
   "nyc": {
