@@ -29,12 +29,14 @@
     "server"
   ],
   "devDependencies": {
+    "babel-plugin-istanbul": "^2.0.1",
     "coveralls": "^2.11.4",
     "faker": "^3.0.1",
     "in-publish": "2.0.0",
     "isparta": "^4.0.0",
     "mocha-eslint": "^3.0.1",
     "must": "^0.13.1",
+    "nyc": "^8.1.0",
     "trash-cli": "^1.3.0"
   },
   "scripts": {
@@ -42,13 +44,23 @@
     "build": "babel lib --out-dir dist --source-maps --ignore cli/blueprints/*/files/**",
     "prewatch": "trash dist && cp -r lib dist",
     "watch": "babel lib --out-dir dist --source-maps --ignore cli/blueprints/*/files/** --watch",
-    "coverage": "babel-node node_modules/.bin/isparta cover node_modules/mocha/bin/_mocha --compilers js:babel-core/register test/**/*.js && coveralls < coverage/lcov.info",
+    "coverage": "nyc report --reporter=text-lcov | coveralls",
     "lint": "eslint lib test",
     "postcoverage": "rimraf coverage",
     "prepublish": "in-publish && npm run lint && npm test && npm run build || not-in-publish",
-    "test": "NODE_ENV=test mocha --compilers js:babel-core/register test/**/*.js test/*.js"
+    "test": "NODE_ENV=test nyc --reporter=html --reporter=text mocha"
   },
   "license": "MIT",
+  "nyc": {
+    "include": [
+      "test/**/*.js"
+    ],
+    "require": [
+      "babel-core/register"
+    ],
+    "sourceMap": false,
+    "instrument": false
+  },
   "dependencies": {
     "accepts": "^1.3.3",
     "babel-cli": "^6.8.0",
