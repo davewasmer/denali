@@ -51,9 +51,6 @@
   },
   "license": "MIT",
   "nyc": {
-    "include": [
-      "test/**/*.js"
-    ],
     "require": [
       "babel-core/register"
     ],
