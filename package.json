@@ -10,8 +10,8 @@
     "url": "davewasmer.com"
   },
   "files": [
-    "dist",
-    "bin"
+    "bin",
+    "lib"
   ],
   "bin": {
     "denali": "bin/denali"
