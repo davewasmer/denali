@@ -158,8 +158,8 @@ Let's break down what's going on here:
   * `import ApplicationAction from './application';` - we import the
   `ApplicationAction` to use as our common base class. You could import the base
   `Action` class from the `denali` module directly, but having a base class for
-  all actions in your app is handy (and the convention).
-  * `respond() {` - the `respond()` method is the meat of any action. It defines
+  all actions in your app is handy (and common convention).
+  * `respond()` - the `respond()` method is the meat of any action. It defines
   how the action responds to an incoming request.
   * `return new Response(...)` - you can tell Denali what to respond to a
   request with in a few different ways. Here, we return a `Response` object
@@ -175,10 +175,10 @@ object that we saw above: `{ "message": "Welcome to Denali!" }`.
 Now let's get a bit more creative. Our blog API is going to need to store and
 retrieve our blog posts. Let's create a Post resource to enable that.
 
-> Normally, you'd probably store those in some kind of database (i.e. Mongo,
+> Normally, you'd probably store these in some kind of database (i.e. Mongo,
 > Postgres, MySQL, etc). Denali is **database agnostic** though. So for now,
-> we'll use plain ol' JS objects (a.k.a. POJOs). But you could easily substitute
-> your own models in later. For more details, check out the Data guides.
+> we'll use plain ol' JS objects (a.k.a. POJOs). But you can easily substitute
+> your own models in later. For more details, check out the [Data guides](../../data/models).
 
 To start, let's use that handy scaffolding tool again:
 
@@ -256,7 +256,7 @@ Denali takes a unique approach to handling database integrations. Most
 frameworks ship with some kind of Object Relational Mapper (ORM) baked right in.
 It transforms rows from a database into objects you can manipulate.
 
-Here's the thing: **ORMs are hard. _Really hard.__** To make matters worse,
+Here's the thing: **ORMs are hard. _Really hard._** To make matters worse,
 there's **no generally accepted "good" ORM for Node.js**.
 
 With this in mind, Denali purposefully **does not ship with an ORM**. Instead,
@@ -362,12 +362,12 @@ It's missing there too. What's going on here?
 
 The reason our `title` field was missing was because of our Serializers.
 
-A Serializer takes an in-memory payload object (or array), and transforms into
+A Serializer takes an in-memory payload object (or array), and transforms it into
 JSON to send back in the response.
 
 By default, Serializers are configured with a whitelist of which attributes are
-allowed to be returned. Since we didn't touch our PostSerializer yet, the
-`title` attribute isn't in that whitelist, so it gets stripped out on all our
+allowed to be returned. Since we haven't touched our PostSerializer yet, the
+`title` attribute isn't in that whitelist, so it gets stripped out of all our
 responses.
 
 Let's fix that now by adding it to the whitelist:
