@@ -4,7 +4,7 @@ title: Initializers
 
 # Initializers
 
-Initializers a functions that run after your application is loaded into memory,
+Initializers are functions that run after your application is loaded into memory,
 but before it binds to a port to start accepting connections. It's the ideal
 spot to do any kind of bootstrapping or setup to get your app ready to start
 serving connections.
@@ -36,7 +36,7 @@ export default {
 
 ## Initializer order
 
-Sometimes you may way an initializer to run before or after another. To let
+Sometimes you may want an initializer to run before or after another. To let
 Denali know what the order should be, just add a `before` and/or `after` array
 to your initializer object which contains the names of the initializers that
 should run before or after:
