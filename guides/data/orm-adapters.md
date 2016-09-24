@@ -18,7 +18,7 @@ layer.
 ## Available ORM Adapters
 
 Several popular ORMs have Denali adapters ready to go. Just add them to your
-project via `$ denali install <adapter package name>`, and set your `ormAdapter`
+project via `$ denali install <adapter package name>`, and set the `ormAdapter`
 property in your `config/environment.js` file to the ORM's name.
 
 * [`node-orm2`](https://github.com/denali-js/denali-node-orm2) (alpha)
