@@ -64,6 +64,7 @@
     "bluebird": "^3.3.5",
     "body-parser": "^1.14.2",
     "chalk": "^1.1.1",
+    "cli-table2": "^0.2.0",
     "compression": "^1.6.0",
     "cookie-parser": "^1.4.3",
     "cors": "^2.7.1",
