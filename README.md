@@ -4,7 +4,8 @@
 [![Build Status][travis-image]][travis-url]
 [![Coveralls Status][coveralls-image]][coveralls-url]
 [![Dependency Status][depstat-image]][depstat-url]
-[![Downloads][download-badge]][npm-url]
+[![Downloads][download-image]][npm-url]
+[![Standard Version][sv-image]][sv-url]
 
 > An opinionated Node framework for building robust JSON APIs
 
@@ -92,4 +93,8 @@ MIT © [Dave Wasmer](http://davewasmer.com)
 [depstat-url]: https://david-dm.org/denali-js/denali
 [depstat-image]: https://david-dm.org/denali-js/denali/status.svg?style=flat-square
 
-[download-badge]: https://img.shields.io/npm/dm/denali.svg?style=flat-square
+[download-image]: https://img.shields.io/npm/dm/denali.svg?style=flat-square
+
+[sv-url]: https://github.com/conventional-changelog/standard-version
+[sv-image]: https://img.shields.io/badge/release-standard%20version-brightgreen.svg?style=flat-square
+
