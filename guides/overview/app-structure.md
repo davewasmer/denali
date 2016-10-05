@@ -27,7 +27,7 @@ only.
 
 # `config/`
 
-Holds the declarative and executable configuration for your app. *.js files
+Holds the declarative and executable configuration for your app. \*.js files
 (other than `environment.js` and `initializers/*.js`) in this folder will be
 automatically loaded into the container under their filename (i.e.
 `config/foo.js` will be loaded under `config:foo`).
