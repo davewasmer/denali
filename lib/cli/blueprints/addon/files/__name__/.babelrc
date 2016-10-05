@@ -1,7 +1,6 @@
 {
-  "presets": [ "es2015" ],
+  "presets": [ "latest" ],
   "plugins": [
     "transform-class-properties"
   ]
 }
-
