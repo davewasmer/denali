@@ -21,11 +21,9 @@ Several popular ORMs have Denali adapters ready to go. Just add them to your
 project via `$ denali install <adapter package name>`, and set the `ormAdapter`
 property in your `config/environment.js` file to the ORM's name.
 
-* [`node-orm2`](https://github.com/denali-js/denali-node-orm2) (alpha)
+* [`node-orm2`](https://github.com/denali-js/denali-node-orm2) (beta)
 * ~~`Sequelize`~~ (coming soon)
 * ~~`Bookshelf`~~ (coming soon)
-
-TODO confirm these links work and projects are working
 
 ## Creating an ORM Adapter
 
@@ -44,39 +42,39 @@ export default class MyCoolORMAdapter extends ORMAdapter {
 
   }
 
-  static idFor(record) {
+  static idFor(model) {
 
   }
 
-  static getAttribute(record, property) {
+  static getAttribute(model, property) {
 
   }
 
-  static setAttribute(record, property) {
+  static setAttribute(model, property) {
 
   }
 
-  static deleteAttribute(record, property) {
+  static deleteAttribute(model, property) {
 
   }
 
-  static getRelationship(record, relationship) {
+  static getRelated(model, relationship) {
 
   }
 
-  static setRelationship(record, relationship) {
+  static setRelated(model, relationship) {
 
   }
 
-  static deleteRelationship(record, relationship) {
+  static removeRelated(model, relationship) {
 
   }
 
-  static saveRecord(record, options) {
+  static saveRecord(model, options) {
 
   }
 
-  static deleteRecord(record, options) {
+  static deleteRecord(model, options) {
 
   }
 
