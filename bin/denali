@@ -1,10 +1,10 @@
 #!/usr/bin/env node
+'use strict';
 
 require('source-map-support').install();
 const path = require('path');
 const resolve = require('resolve');
 const findup = require('findup-sync');
-
 const pkgPath = findup('package.json');
 
 // No package.json found, revert to global install
