@@ -71,6 +71,7 @@
     "broccoli-merge-trees": "^1.1.4",
     "chalk": "^1.1.1",
     "cli-table2": "^0.2.0",
+    "command-exists": "^1.0.2",
     "compression": "^1.6.0",
     "cookie-parser": "^1.4.3",
     "copy-dereference": "^1.0.0",
