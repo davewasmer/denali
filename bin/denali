@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
+var chalk = require('chalk');
 var version = process.version.slice(1);
 var groups = version.split('.').map(function (item) {
   return Number(item);
 });
 
 if (groups[0] < 6) {
-  console.error('`denali` requires node version >= 6, you used ' + version);
+  console.error(chalk.red('`denali` requires node version >= 6, you used ' + version));
   return process.exit(1);
 }
 
