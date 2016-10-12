@@ -17,7 +17,7 @@ describe('new command', function() {
   before(function() {
     this.timeout(20000);
     this.tmpdir = tmp.dirSync({ unsafeCleanup: true });
-    run(`${ denaliPath } new foobar --skip-npm`, { cwd: this.tmpdir.name });
+    run(`${ denaliPath } new foobar --skip-deps`, { cwd: this.tmpdir.name });
   });
 
   after(function() {
