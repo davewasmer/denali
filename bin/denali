@@ -1,28 +1,13 @@
 #!/usr/bin/env node
 
-require('source-map-support').install();
-const path = require('path');
-const resolve = require('resolve');
-const findup = require('findup-sync');
+var version = process.version.slice(1);
+var groups = version.split('.').map(function (item) {
+  return Number(item);
+});
 
-const pkgPath = findup('package.json');
-
-// No package.json found, revert to global install
-if (!pkgPath) {
-  require('../dist/lib/cli/commands');
-
-// Package.json found
-} else {
-
-  let pkgDir = path.dirname(path.resolve(pkgPath));
-  let localDenali;
-  try {
-    localDenali = resolve.sync('denali', { basedir: pkgDir });
-    let localDenaliPkgDir = path.dirname(findup('package.json', { cwd: localDenali }));
-    let localCommands = path.join(localDenaliPkgDir, 'dist/lib/cli/commands');
-    require(localCommands);
-  } catch(e) {
-    require('../dist/lib/cli/commands');
-  }
-
+if (groups[0] < 6) {
+  console.error('`denali` requires node version >= 6, you used ' + version);
+  return process.exit(1);
 }
+
+require('./run');
