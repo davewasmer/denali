@@ -8,3 +8,4 @@ dist
 .sass-cache
 _site
 .nyc_output
+lcov.info
