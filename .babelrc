@@ -1,7 +1,8 @@
 {
   "presets": [ "latest" ],
   "plugins": [
-    "transform-class-properties"
+    "transform-class-properties",
+    "transform-async-to-generator"
   ],
   "ignore": [
     "cli/blueprints/*/files/**"
