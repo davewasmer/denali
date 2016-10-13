@@ -1,4 +1,3 @@
-import 'babel-polyfill';
 import expect from 'must';
 import sleep from 'then-sleep';
 import Action from '../../lib/runtime/action';

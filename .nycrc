@@ -2,6 +2,9 @@
   "include": [
     "lib/**/*.js"
   ],
+  "require": [
+    "babel-polyfill"
+  ],
   "sourceMap": false,
   "instrument": false
 }
