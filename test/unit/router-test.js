@@ -40,7 +40,6 @@ describe.only('Denali.Router', function() {
     let mock = mockReqRes({
       request: {
         headers: {
-          'content-type': 'application/json',
           'transfer-encoding': 'chunked'
         },
         method: 'post',
