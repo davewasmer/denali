@@ -3,7 +3,6 @@ import Action from '../../lib/runtime/action';
 import Router from '../../lib/runtime/router';
 import Container from '../../lib/runtime/container';
 import FlatSerializer from '../../lib/runtime/base/app/serializers/flat';
-import JSONAPISerializer from '../../lib/runtime/base/app/serializers/json-api';
 import merge from 'lodash/merge';
 
 function mockReqRes(overrides) {
