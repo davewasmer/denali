@@ -1,4 +1,5 @@
 import expect from 'must';
+import sleep from 'then-sleep';
 import Action from '../../lib/runtime/action';
 import Model from '../../lib/data/model';
 import Response from '../../lib/runtime/response';
@@ -39,6 +40,28 @@ describe('Denali.Action', function() {
     let responded = false;
     class TestAction extends Action {
       respond(params) {
+        expect(params.query).to.be.true();
+        expect(params.body).to.be.true();
+        responded = true;
+      }
+    }
+    let action = new TestAction(mockReqRes({
+      request: {
+        query: { query: true },
+        body: { body: true }
+      }
+    }));
+
+    return action.run().then(() => {
+      expect(responded).to.be.true();
+    });
+  });
+
+  it('should invoke async respond() with params', function() {
+    let responded = false;
+    class TestAction extends Action {
+      async respond(params) {
+        await sleep(5);
         expect(params.query).to.be.true();
         expect(params.body).to.be.true();
         responded = true;

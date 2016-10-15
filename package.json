@@ -39,7 +39,8 @@
     "must": "^0.13.1",
     "nyc": "^8.1.0",
     "rimraf": "^2.4.2",
-    "standard-version": "^2.4.0"
+    "standard-version": "^2.4.0",
+    "then-sleep": "^1.0.1"
   },
   "scripts": {
     "build": "scripts/build.sh",
@@ -59,6 +60,7 @@
     "babel-cli": "^6.16.0",
     "babel-core": "^6.16.0",
     "babel-eslint": "^7.0.0",
+    "babel-plugin-transform-async-to-generator": "^6.16.0",
     "babel-plugin-transform-class-properties": "^6.16.0",
     "babel-polyfill": "^6.16.0",
     "babel-preset-latest": "^6.16.0",
