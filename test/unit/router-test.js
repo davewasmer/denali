@@ -33,7 +33,7 @@ function mockReqRes(overrides) {
   }, overrides);
 }
 
-describe.only('Denali.Router', function() {
+describe('Denali.Router', function() {
 
   it('should not invoke the default serializer if serializer=false in an action', function() {
     let success = false;
