@@ -1,17 +1,19 @@
+import dedent from 'dedent-js';
 import CliTable from 'cli-table2';
-import ui from '../lib/ui';
-import Command from '../lib/command';
-import Project from '../lib/project';
+import ui from '../cli/ui';
+import Command from '../cli/command';
+import Project from '../cli/project';
 
-export default class ConsoleCommand extends Command {
+export default class RoutesCommand extends Command {
 
   static commandName = 'routes';
   static description = 'Display all defined routes within your application.';
-  static longDescription = `
-Displays routes from your application and any routes added by addons.
-Display shows the method, endpoint, and the action associated to that
-route.
-  `;
+  static longDescription = dedent`
+    Displays routes from your application and any routes added by addons.
+    Display shows the method, endpoint, and the action associated to that
+    route.`;
+
+  runsInApp = true;
 
   params = [];
 
@@ -22,8 +24,6 @@ route.
       type: String
     }
   };
-
-  runsInApp = true;
 
   run({ flags }) {
     let project = new Project({

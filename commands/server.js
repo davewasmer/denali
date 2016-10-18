@@ -1,26 +1,28 @@
+import dedent from 'dedent-js';
 import { spawn } from 'child_process';
-import ui from '../lib/ui';
-import Command from '../lib/command';
-import Project from '../lib/project';
+import ui from '../cli/ui';
+import Command from '../cli/command';
+import Project from '../cli/project';
 import assign from 'lodash/assign';
 
 export default class ServerCommand extends Command {
 
   static commandName = 'server';
   static description = 'Runs the denali server for local or production use.';
-  static longDescription = `
-Launches the Denali server running your application.
+  static longDescription = dedent`
+    Launches the Denali server running your application.
 
-In a development environment, the server does several things:
+    In a development environment, the server does several things:
 
- * watches your local filesystem for changes and automatically restarts for you.
- * lint your code on build
- * run a security audit of your package.json on build (via nsp)
+     * watches your local filesystem for changes and automatically restarts for you.
+     * lint your code on build
+     * run a security audit of your package.json on build (via nsp)
 
-In production, the above features are disabled by default, and instead:
+    In production, the above features are disabled by default, and instead:
 
- * the server will fork worker processes to maximize CPU core usage
-  `;
+     * the server will fork worker processes to maximize CPU core usage`;
+
+  runsInApp = true;
 
   params = [];
 
@@ -60,9 +62,7 @@ In production, the above features are disabled by default, and instead:
       defaultValue: 'dist',
       type: String
     }
-  };
-
-  runsInApp = true;
+  }
 
   run({ flags }) {
     this.watch = flags.watch || flags.environment === 'development';
@@ -119,6 +119,5 @@ In production, the above features are disabled by default, and instead:
     process.on('SIGINT', cleanExit);
     process.on('SIGTERM', cleanExit);
   }
-
 
 }

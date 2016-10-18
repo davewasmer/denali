@@ -5,10 +5,8 @@ import walk from 'walk-sync';
 import mkdirp from 'mkdirp';
 import rimraf from 'rimraf';
 import ui from './ui';
-import isDir from '../../utils/is-dir';
+import isDir from '../lib/utils/is-dir';
 import template from 'lodash/template';
-
-const blueprintsDir = path.join(__dirname, '..', 'blueprints');
 
 /**
  * The Blueprint class manages generating code from a template, or "blueprint".
@@ -49,6 +47,10 @@ export default class Blueprint {
 
   flags = {};
 
+  constructor(dir) {
+    this.dir = dir;
+  }
+
   /**
    * A hook to generate data to be interpolated into the blueprint's template
    * files.
@@ -85,7 +87,7 @@ export default class Blueprint {
    * @return {String}
    */
   get templateFiles() {
-    return path.join(blueprintsDir, this.constructor.blueprintName, 'files');
+    return path.join(this.dir, 'files');
   }
 
   /**

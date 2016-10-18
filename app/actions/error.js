@@ -1,5 +1,5 @@
-import Action from '../../../action';
-import Response from '../../../response';
+import Action from '../../lib/runtime/action';
+import Response from '../../lib/runtime/response';
 import fs from 'fs';
 import path from 'path';
 import template from 'lodash/template';

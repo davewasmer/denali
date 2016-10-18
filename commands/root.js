@@ -1,20 +1,21 @@
+import dedent from 'dedent-js';
 import path from 'path';
 import resolve from 'resolve';
-import ui from '../lib/ui';
-import Command from '../lib/command';
+import ui from '../cli/ui';
+import Command from '../cli/command';
 import forIn from 'lodash/forIn';
 import padEnd from 'lodash/padEnd';
 
 export default class RootCommand extends Command {
 
-  static hidden = true;
+  hidden = true;
+
+  params = [];
 
   flags = {
     version: {
-      description: `
-        Print the version of Denali used in the current project, or the global
-        version if invoked outside a project
-      `,
+      description: dedent`Print the version of Denali used in the current project,
+                          or the global version if invoked outside a project`,
       type: Boolean
     },
     help: {
@@ -46,11 +47,9 @@ export default class RootCommand extends Command {
   }
 
   printHelp(commands) {
-    ui.info(`
-usage: denali [command] [args]
+    ui.info(dedent`usage: denali [command] [args]
 
-Available commands:
-`.trim());
+                   Available commands:`);
 
     let pad = Object.keys(commands).reduce((longest, name) => Math.max(longest, name.length), 0);
 

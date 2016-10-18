@@ -10,7 +10,7 @@
     "denali-addon",
     "addon"
   ],
-  "main": "dist/app/addon.js",
+  "main": "app/addon.js",
   "dependencies": {
     "babel-plugin-transform-class-properties": "^6.8.0",
     "babel-preset-latest": "^6.16.0",

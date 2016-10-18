@@ -1,9 +1,9 @@
 import repl from 'repl';
 import dedent from 'dedent-js';
 import chalk from 'chalk';
-import ui from '../lib/ui';
-import Command from '../lib/command';
-import Project from '../lib/project';
+import ui from '../cli/ui';
+import Command from '../cli/command';
+import Project from '../cli/project';
 
 export default class ConsoleCommand extends Command {
 
@@ -11,8 +11,7 @@ export default class ConsoleCommand extends Command {
   static description = 'Launch a REPL with your application loaded';
   static longDescription = dedent`
     Starts a REPL (Read-Eval-Print Loop) with your application initialized and
-    loaded into memory. Type \`.help\` in the REPL environment for more details.
-    `;
+    loaded into memory. Type \`.help\` in the REPL environment for more details.`;
 
   params = [];
 

@@ -1,1 +1,1 @@
-export { default } from '../../../../data/serializers/flat';
+export { default } from '../../lib/data/serializers/flat';

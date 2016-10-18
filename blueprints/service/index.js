@@ -1,4 +1,4 @@
-import Blueprint from '../../lib/blueprint';
+import Blueprint from '../../cli/blueprint';
 
 export default class ServiceBlueprint extends Blueprint {
 

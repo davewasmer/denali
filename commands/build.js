@@ -1,14 +1,14 @@
-import Command from '../lib/command';
-import Project from '../lib/project';
+import dedent from 'dedent-js';
+import Command from '../cli/command';
+import Project from '../cli/project';
 
 export default class BuildCommand extends Command {
 
   static commandName = 'build';
   static description = 'Compile your app into optimized ES5 code';
-  static longDescription = `
-Takes your app's ES201X source code and produces compiled, sourcemapped, and
-optimized output compatible with Node 6.
-  `;
+  static longDescription = dedent`
+    Takes your app's ES201X source code and produces compiled, sourcemapped, and
+    optimized output compatible with Node 6.`;
 
   params = [];
 

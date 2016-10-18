@@ -1,6 +1,6 @@
 import upperFirst from 'lodash/upperFirst';
 import camelCase from 'lodash/camelCase';
-import Blueprint from '../../lib/blueprint';
+import Blueprint from '../../cli/blueprint';
 
 export default class ActionBlueprint extends Blueprint {
 

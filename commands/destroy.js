@@ -1,18 +1,19 @@
 import fs from 'fs';
 import path from 'path';
+import dedent from 'dedent-js';
 import { padEnd } from 'lodash';
-import ui from '../lib/ui';
-import Command from '../lib/command';
+import ui from '../cli/ui';
+import Command from '../cli/command';
+import Project from '../cli/project';
 
 export default class DestroyCommand extends Command {
 
   static commandName = 'destroy';
   static description = 'Remove scaffolded code from your app';
-  static longDescription = `
-Removes the code generated during a \`denali generate\` command. Errs on the
-side of caution when deleting code - it will only remove files that exactly
-match the generated output. Modified files will be left untouched.
-  `;
+  static longDescription = dedent`
+    Removes the code generated during a \`denali generate\` command. Errs on the
+    side of caution when deleting code - it will only remove files that exactly
+    match the generated output. Modified files will be left untouched. `;
 
   params = [ 'blueprintName', 'otherArgs' ];
 
@@ -26,15 +27,13 @@ match the generated output. Modified files will be left untouched.
     if (!params.blueprintName) {
       this.printHelp();
     } else {
-      this.destroyBlueprint(params.blueprintName, argTokens);
+      let project = new Project();
+      let blueprintDir = project.findBlueprint(params.blueprintName);
+      let Blueprint = require(blueprintDir).default;
+      let blueprint = new Blueprint(blueprintDir);
+      let blueprintArgs = this.parseArgs.call(blueprint, argTokens.slice(1));
+      blueprint.destroy(blueprintArgs);
     }
-  }
-
-  destroyBlueprint(blueprintName, argTokens) {
-    const Blueprint = require(`../blueprints/${ blueprintName }`).default;
-    let blueprint = new Blueprint();
-    let blueprintArgs = this.parseArgs.call(blueprint, argTokens.slice(1));
-    blueprint.destroy(blueprintArgs);
   }
 
   printHelp() {

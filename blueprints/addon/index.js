@@ -1,10 +1,10 @@
-import ui from '../../lib/ui';
 import ora from 'ora';
-import Blueprint from '../../lib/blueprint';
 import Promise from 'bluebird';
 import { exec } from 'child_process';
 import startCase from 'lodash/startCase';
-import pkg from '../../../../../package.json';
+import ui from '../../cli/ui';
+import Blueprint from '../../cli/blueprint';
+import pkg from '../../package.json';
 
 const run = Promise.promisify(exec);
 

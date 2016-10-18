@@ -11,7 +11,6 @@ import includes from 'lodash/includes';
  *
  * @class Command
  * @constructor
- * @private
  * @module denali
  * @submodule cli
  */
@@ -53,10 +52,9 @@ export default class Command {
    * `--environment production`), or arrays of strings (i.e. `--files foo bar`).
    *
    * @property flags
-   * @type {Object}
+   * @type Object
    * @example
-   *     // i.e. $ denali mycommand --environment production --debug
-   *     flags: {
+   *     flags = {
    *       environment: {
    *         description: 'The environment to run under',
    *         defaultValue: 'development',
@@ -67,9 +65,28 @@ export default class Command {
    *         defaultValue: false,
    *         type: 'boolean'
    *       }
-   *     }
+   *     };
    */
   flags = {};
+
+  /**
+   * If true, Denali will require that this command be run inside an existing
+   * app.
+   *
+   * @property runsInApp
+   * @type Boolean
+   */
+  runsInApp = false;
+
+  /**
+   * If true, Denali will allow additional arguments to be supplied with the
+   * command without printing a warning. This is useful particular for
+   * blueprints, where the arguments may vary across blueprints.
+   *
+   * @property allowExtraArgs
+   * @type Boolean
+   */
+  allowExtraArgs = false;
 
   /**
    * Show a spinner to indicate activity

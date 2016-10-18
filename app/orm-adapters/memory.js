@@ -1,1 +1,1 @@
-export { default } from '../../../../data/orm-adapters/memory';
+export { default } from '../../lib/data/orm-adapters/memory';

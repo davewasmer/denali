@@ -1,22 +1,22 @@
-import ui from '../lib/ui';
-import Command from '../lib/command';
+import dedent from 'dedent-js';
+import ui from '../cli/ui';
+import Command from '../cli/command';
 import { exec } from 'child_process';
 
 export default class InstallCommand extends Command {
 
   static commandName = 'install';
   static description = 'Install an addon in your app.';
-  static longDescription = `
-Installs the supplied addon in the project. Essentially a shortcut for
-\`npm install --save <addon>\`, with sanity checking that the project actually is
-a Denali addon.
-  `;
+  static longDescription = dedent`
+    Installs the supplied addon in the project. Essentially a shortcut for
+    \`npm install --save <addon>\`, with sanity checking that the project actually is
+    a Denali addon.`;
+
+  runsInApp = true;
 
   params = [ 'addonName' ];
 
   flags = {};
-
-  runsInApp = true;
 
   run(params) {
     this.startSpinner();

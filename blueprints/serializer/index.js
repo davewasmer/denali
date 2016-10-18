@@ -1,6 +1,6 @@
-import Blueprint from '../../lib/blueprint';
 import upperFirst from 'lodash/upperFirst';
 import camelCase from 'lodash/camelCase';
+import Blueprint from '../../cli/blueprint';
 
 export default class SerializerBlueprint extends Blueprint {
 

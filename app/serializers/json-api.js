@@ -1,1 +1,1 @@
-export { default } from '../../../../data/serializers/json-api';
+export { default } from '../../lib/data/serializers/json-api';

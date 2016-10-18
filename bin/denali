@@ -1,14 +1,43 @@
 #!/usr/bin/env node
 
-var chalk = require('chalk');
-var version = process.version.slice(1);
-var groups = version.split('.').map(function (item) {
-  return Number(item);
+require('source-map-support').install();
+require('babel-polyfill');
+require('babel-register')({
+  presets: [ 'latest' ],
+  plugins: [
+    'transform-class-properties'
+  ]
 });
 
-if (groups[0] < 6) {
+var semver = require('semver');
+var chalk = require('chalk');
+
+var version = process.version;
+
+if (!semver.satisfies(process.version, '>=6')) {
   console.error(chalk.red('`denali` requires node version >= 6, you used ' + version));
   return process.exit(1);
 }
 
-require('./run');
+var path = require('path');
+var resolve = require('resolve');
+var findup = require('findup-sync');
+
+var pkgPath = findup('package.json');
+
+// No package.json found, revert to global install
+if (!pkgPath) {
+  require('../commands/index').default();
+
+// Package.json found
+} else {
+  var pkgDir = path.dirname(path.resolve(pkgPath));
+  var localDenali;
+  try {
+    localDenali = resolve.sync('denali', { basedir: pkgDir });
+    var localDenaliPkgDir = path.dirname(findup('package.json', { cwd: localDenali }));
+    require(path.join(localDenaliPkgDir, 'commands', 'index')).default(localDenaliPkgDir);
+  } catch(e) {
+    require('../commands/index').default();
+  }
+}

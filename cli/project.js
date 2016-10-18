@@ -1,21 +1,19 @@
 import fs from 'fs';
 import path from 'path';
-import nsp from 'nsp';
 import dedent from 'dedent-js';
-import escape from 'js-string-escape';
+import nsp from 'nsp';
 import broccoli from 'broccoli';
 import { Watcher } from 'broccoli/lib';
 import rimraf from 'rimraf';
 import MergeTree from 'broccoli-merge-trees';
-import Funnel from 'broccoli-funnel';
-import BabelTree from 'broccoli-babel-transpiler';
-import LintTree from 'broccoli-lint-eslint';
 import { sync as copyDereferenceSync } from 'copy-dereference';
 import chalk from 'chalk';
-import identity from 'lodash/identity';
 import ui from './ui';
-import discoverAddons from '../../utils/discover-addons';
-import tryRequire from '../../utils/try-require';
+import Builder from './builder';
+import discoverAddons from '../lib/utils/discover-addons';
+import tryRequire from '../lib/utils/try-require';
+import isDir from '../lib/utils/is-dir';
+import eachDir from '../lib/utils/each-dir';
 
 export default class Project {
 
@@ -27,16 +25,16 @@ export default class Project {
 
     this.addons = discoverAddons(this.dir, { environment: this.environment });
     this.buildTree = this._createBuildTree();
-    this.builder = new broccoli.Builder(this.buildTree);
   }
 
   build(outputDir = 'dist') {
     this.startTime = process.hrtime();
-    return this.builder.build()
+    let broccoliBuilder = new broccoli.Builder(this.buildTree);
+    return broccoliBuilder.build()
       .then((results) => {
         this._finishBuild(results.directory, outputDir);
       }).finally(() => {
-        return this.builder.cleanup();
+        return broccoliBuilder.cleanup();
       }).catch((err) => {
         if (err.file) {
           ui.error(`File: ${ err.file }`);
@@ -52,10 +50,11 @@ export default class Project {
     if (fs.existsSync(outputDir)) {
       rimraf.sync(outputDir);
     }
-    let watcher = new Watcher(this.builder, { interval: 100 });
+    let broccoliBuilder = new broccoli.Builder(this.buildTree);
+    let watcher = new Watcher(broccoliBuilder, { interval: 100 });
 
     let onExit = () => {
-      this.builder.cleanup();
+      broccoliBuilder.cleanup();
       process.exit(1);
     };
     process.on('SIGINT', onExit);
@@ -104,75 +103,51 @@ export default class Project {
       });
   }
 
-  _createBuildTree() {
-    let dirs = [ 'app', 'config' ];
-    if (this.environment === 'test') {
-      dirs.push('test');
-    }
-
-    let sourceTrees = dirs.map((dir) => {
-      return new Funnel(dir, { destDir: dir });
-    });
-
-    // We do this first because broccoli-lint-eslint is weird
-    // https://github.com/ember-cli/broccoli-lint-eslint/pull/25
-    if (this.lint) {
-      // If it's in test environment, generate test modules for each linted file
-      if (this.environment === 'test') {
-        let lintTestTrees = sourceTrees.map((dir) => {
-          return new LintTree(dir, {
-            testGenerator: mochaLintGenerator,
-            format() {
-              return '\r';
-            }
-          });
+  findBlueprint(name) {
+    // Search every addon plus this app, with precedence given to the app
+    let blueprintOrigins = this.addons.concat([ this.dir ]);
+    let allBlueprints = blueprintOrigins.reduce((blueprints, addonDir) => {
+      let addonName = require(path.join(addonDir), 'package.json').name;
+      let blueprintDir = path.join(addonDir, 'blueprints');
+      fs.readdirSync(blueprintDir)
+        .filter((filepath) => fs.statSync(filepath).isDirectory())
+        .forEach((blueprintName) => {
+          // Add each blueprint under it's addon namespace, and without the
+          // namespace, so that the last addon (or the app) will win in case of
+          // collisions.
+          blueprints[`${ addonName }:${ blueprintName }`] = path.join(blueprintDir, blueprintName);
+          blueprints[blueprintName] = path.join(blueprintDir, blueprintName);
         });
-        let lintTestTree = new MergeTree(lintTestTrees);
-        lintTestTree = new Funnel(lintTestTree, { destDir: 'test/lint' });
-        sourceTrees.push(lintTestTree);
-      // Otherwise, just lint and move on
-      } else {
-        sourceTrees = sourceTrees.map((dir) => new LintTree(dir));
-      }
+      return blueprints;
+    }, {});
+    return allBlueprints[name];
+  }
+
+  _createBuildTree() {
+    // Create a builder for the app itself first, so that addons can modify it
+    this.appBuilder = this._builderForDir(this.dir);
+    // Create builders for each addon
+    let builders = this.addons.map((dir) => this._builderForDir(dir));
+    // Add the app builder last to ensure it overwrites any addon trees
+    builders.push(this.appBuilder);
+    let buildTrees = builders.map((builder) => builder.toTree());
+    return new MergeTree(buildTrees, { overwrite: true });
+  }
+
+  _builderForDir(dir) {
+    let BuilderClass;
+    if (fs.existsSync(path.join(dir, 'denali-build.js'))) {
+      BuilderClass = require(path.join(dir, 'denali-build.js'));
+    } else {
+      BuilderClass = Builder;
     }
-
-    let tree = new MergeTree(sourceTrees);
-
-    // Let addons have first crack at the app's build tree. They also get their
-    // own absolute path passed in, in case they want to inject their own assets
-    // into the app build
-    this.addons.forEach((addon) => {
-      let addonBuild = tryRequire(path.join(addon.dir, 'denali-build.js')) || identity;
-      tree = addonBuild(tree, this, addon.dir);
-    });
-
-    // Let the app itself customize it's own build process.
-    let appBuild = tryRequire(path.join(this.dir, 'denali-build.js')) || identity;
-    tree = appBuild(tree, this);
-
-    // Now the standard Denali build
-    let transpiled = new Funnel(tree, {
-      include: dirs.map((dir) => `${ dir }/**/*.js`)
-    });
-    transpiled = new BabelTree(transpiled, {
-      presets: [ 'latest' ],
-      plugins: [
-        'transform-class-properties'
-      ],
-      browserPolyfill: true
-    });
-    return new MergeTree([ tree, transpiled ], { overwrite: true });
+    return new BuilderClass(dir, this, { lint: this.lint });
   }
 
   _finishBuild(results, outputDir) {
     rimraf.sync(outputDir);
     copyDereferenceSync(results, outputDir);
-    [
-      'package.json',
-      'node_modules'
-    ].forEach((p) => {
-      fs.symlinkSync(path.join(this.dir, p), path.join(outputDir, p));
-    });
+    this._linkDependencies(path.join(this.dir, 'node_modules'), path.join(outputDir, 'node_modules'));
     ui.info('Build successful');
     if (this.audit) {
       let pkg = path.join(this.dir, 'package.json');
@@ -184,44 +159,36 @@ export default class Project {
         if (vulnerabilities && vulnerabilities.length > 0) {
           ui.warn('WARNING: Some packages in your package.json may have security vulnerabilities:');
           vulnerabilities.forEach((item) => {
-            let module = `** ${ item.module }@${ item.version } **`;
+            let dependencyPath = item.path.join(' => ');
+            let module = `*** ${ item.module }@${ item.version } ***`;
             let recommendation = (item.recommendation || '').replace(/\n/g, ' ');
-            ui.warn(`${ chalk.bold(module) } ${ chalk.reset.cyan(recommendation) }`);
+            let message = dedent`${ chalk.bold.yellow(module) }
+                                  Found in: ${ dependencyPath }
+                                  Recommendation: ${ chalk.reset.cyan(recommendation) }`;
+            ui.raw('warn', `${ message }\n`);
           });
         }
       });
     }
   }
 
-
-}
-
-function mochaLintGenerator(relativePath, errors, results) {
-  let passed = !results.errorCount || results.errorCount.length === 0;
-  let messages = `${ relativePath } should pass ESLint`;
-
-  if (results.messages) {
-    messages += '\n\n';
-    messages += errors.map((error) => {
-      return `${ error.line }:${ error.column } - ${ error.message } (${ error.ruleId })`;
-    }).join('\n');
+  _linkDependencies(sourceModules, destModules) {
+    if (!fs.existsSync(destModules)) {
+      fs.mkdir(destModules);
+    }
+    eachDir(sourceModules, (moduleName) => {
+      let source = path.join(sourceModules, moduleName);
+      let dest = path.join(destModules, moduleName);
+      try {
+        fs.symlinkSync(source, dest);
+      } catch (e) {
+        if (e.message.match(/EEXIST/) && isDir(path.join(source, 'node_modules'))) {
+          this._linkDependencies(path.join(source, 'node_modules'), path.join(dest, 'node_modules'));
+        } else {
+          throw e;
+        }
+      }
+    });
   }
 
-  let output = dedent`import { AssertionError } from 'must';
-
-                      describe('ESLint | ${ escape(relativePath) }', function() {
-                        it('should pass ESLint', function() {
-                      `;
-
-  if (passed) {
-    output += '    // ESLint passed\n';
-  } else {
-    output += dedent`// ESLint failed
-                     let error = new AssertionError('${ escape(messages) }');
-                     error.stack = undefined;
-                     throw error;
-`.trim();
-  }
-  output += `  });\n});\n`;
-  return output;
 }

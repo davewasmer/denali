@@ -1,17 +1,19 @@
+import dedent from 'dedent-js';
 import { spawn } from 'child_process';
-import ui from '../lib/ui';
-import Command from '../lib/command';
-import Project from '../lib/project';
+import ui from '../cli/ui';
+import Command from '../cli/command';
+import Project from '../cli/project';
 import assign from 'lodash/assign';
 
 export default class TestCommand extends Command {
 
   static commandName = 'test';
   static description = "Run your app's test suite";
-  static longDescription = `
-Runs your app's test suite, and can optionally keep re-running it on each file
-change (--watch).
-  `;
+  static longDescription = dedent`
+    Runs your app's test suite, and can optionally keep re-running it on each file
+    change (--watch).`;
+
+  runsInApp = true;
 
   params = [ 'files' ];
 
@@ -47,8 +49,6 @@ change (--watch).
       type: String
     }
   };
-
-  runsInApp = true;
 
   run({ params, flags }) {
     this.files = params.files || 'test/**/*.js';
