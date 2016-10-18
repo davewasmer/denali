@@ -20,10 +20,21 @@ export default class Project {
   constructor(options) {
     this.environment = options.environment || 'development';
     this.dir = options.dir || process.cwd();
+    this.projectDir = this.dir;
     this.lint = options.lint;
     this.audit = options.audit;
 
-    this.addons = discoverAddons(this.dir, { environment: this.environment });
+    let pkg = require(path.join(this.dir, 'package.json'));
+    let preseededAddons = [];
+    if (pkg.keywords.includes('denali-addon')) {
+      preseededAddons.push(this.dir);
+      this.dir = path.join(this.dir, 'test/dummy');
+    }
+
+    this.addons = discoverAddons(this.dir, {
+      environment: this.environment,
+      preseededAddons
+    });
     this.buildTree = this._createBuildTree();
   }
 
@@ -147,10 +158,10 @@ export default class Project {
   _finishBuild(results, outputDir) {
     rimraf.sync(outputDir);
     copyDereferenceSync(results, outputDir);
-    this._linkDependencies(path.join(this.dir, 'node_modules'), path.join(outputDir, 'node_modules'));
+    this._linkDependencies(path.join(this.projectDir, 'node_modules'), path.join(outputDir, 'node_modules'));
     ui.info('Build successful');
     if (this.audit) {
-      let pkg = path.join(this.dir, 'package.json');
+      let pkg = path.join(this.projectDir, 'package.json');
       nsp.check({ package: pkg }, (err, vulnerabilities) => {
         if (err && [ 'ENOTFOUND', 'ECONNRESET' ].includes(err.code)) {
           ui.warn('Error trying to scan package dependencies for vulnerabilities with nsp, unable to reach server. Skipping scan ...');

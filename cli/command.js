@@ -141,8 +141,9 @@ export default class Command {
     let pkgpath = findup('package.json');
     if (pkgpath) {
       const pkg = require(path.resolve(pkgpath));
-      let isDenali = pkg.dependencies && pkg.dependencies.denali;
-      return isDenali && path.resolve(path.dirname(pkgpath));
+      let isApp = pkg.dependencies && pkg.dependencies.denali;
+      let isAddon = pkg.keywords && pkg.keywords.includes('denali-addon');
+      return (isApp || isAddon) && path.resolve(path.dirname(pkgpath));
     }
     return false;
   }
