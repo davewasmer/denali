@@ -2,7 +2,7 @@
 
 [![NPM version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]
-[![Coveralls Status][coveralls-image]][coveralls-url]
+[![Coverage][coverage-image]][coverage-url]
 [![Dependency Status][depstat-image]][depstat-url]
 [![Downloads][download-image]][npm-url]
 [![Standard Version][sv-image]][sv-url]
@@ -87,8 +87,8 @@ MIT © [Dave Wasmer](http://davewasmer.com)
 [travis-url]: https://travis-ci.org/denali-js/denali
 [travis-image]: https://img.shields.io/travis/denali-js/denali/master.svg?style=flat-square
 
-[coveralls-url]: https://coveralls.io/r/denali-js/denali
-[coveralls-image]: https://img.shields.io/coveralls/denali-js/denali/master.svg?style=flat-square
+[coverage-url]: https://codeclimate.com/github/denali-js/denali
+[coverage-image]: https://img.shields.io/codeclimate/coverage/github/denali-js/denali.svg
 
 [depstat-url]: https://david-dm.org/denali-js/denali
 [depstat-image]: https://david-dm.org/denali-js/denali/status.svg?style=flat-square
