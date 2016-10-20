@@ -3,6 +3,7 @@ import Action from '../../lib/runtime/action';
 import Model from '../../lib/data/model';
 import Response from '../../lib/runtime/response';
 import Container from '../../lib/runtime/container';
+import Service from '../../lib/runtime/service';
 import FlatSerializer from '../../lib/runtime/base/app/serializers/flat';
 import merge from 'lodash/merge';
 
@@ -324,19 +325,21 @@ describe('Denali.Action', function() {
       let service;
       class TestAction extends Action {
         respond() {
-          let Mine = this.service('mine');
-          service = Mine;
-          return Mine;
+          let mock = this.service('mock');
+          service = mock;
+          return mock;
         }
       }
       let mock = mockReqRes();
+      class MockService extends Service {
+      }
 
-      mock.container.register('service:mine', { type: 'mine' });
+      mock.container.register('service:mock', new MockService());
 
       let action = new TestAction(mock);
 
       return action.run().then(() => {
-        expect(service.type).to.eql('mine');
+        expect(service instanceof MockService).to.be.true();
       });
     });
 
