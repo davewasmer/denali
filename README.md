@@ -88,7 +88,7 @@ MIT © [Dave Wasmer](http://davewasmer.com)
 [travis-image]: https://img.shields.io/travis/denali-js/denali/master.svg?style=flat-square
 
 [coverage-url]: https://codeclimate.com/github/denali-js/denali
-[coverage-image]: https://img.shields.io/codeclimate/coverage/github/denali-js/denali.svg
+[coverage-image]: https://img.shields.io/codeclimate/coverage/github/denali-js/denali.svg?style=flat-square
 
 [depstat-url]: https://david-dm.org/denali-js/denali
 [depstat-image]: https://david-dm.org/denali-js/denali/status.svg?style=flat-square
