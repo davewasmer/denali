@@ -27,20 +27,25 @@ export default class LintTree extends Filter {
   processString(content, relativePath) {
     let report = this.cli.executeOnText(content, path.join(this.rootDir, relativePath));
     let result = report.results[0] || {};
-    let errors = result.messages || [];
+    let messages = result.messages || [];
 
-    errors = errors.filter((error) => !IGNORED_FILE_MESSAGE_REGEXP.test(error.message));
+    messages = messages.filter((msg) => !IGNORED_FILE_MESSAGE_REGEXP.test(msg.message));
 
     if (this.generateTests) {
-      return this.testGenerator(relativePath, errors);
+      return this.testGenerator(relativePath, messages);
     }
 
-    errors.forEach((error) => {
-      ui.warn(dedent`
-        ${ error.source }
-        ${ error.message } (${ error.ruleId })
-      `);
-    });
+    if (messages.length > 0) {
+      ui.warn(`${ relativePath } has ${ result.errorCount } errors and ${ result.warningCount } warnings.`);
+
+      messages.forEach((error, index) => {
+        ui.warn(dedent`
+            ${ index + 1 }: ${ error.message } (${ error.ruleId }) at line ${ error.line }:${ error.column }
+          ${ error.source }
+        `);
+      });
+    }
+
     return content;
   }
 
