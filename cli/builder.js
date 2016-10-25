@@ -6,17 +6,33 @@ import BabelTree from 'broccoli-babel-transpiler';
 import MergeTree from 'broccoli-merge-trees';
 import LintTree from './lint-tree';
 import PackageTree from './package-tree';
+import discoverAddons from '../lib/utils/discover-addons';
+import tryRequire from '../lib/utils/try-require';
 
 
-export default class BuildOrigin {
+export default class Builder {
 
-  constructor(dir, project, options = {}) {
+  constructor(dir, project, preseededAddons) {
+    let LocalBuilder = tryRequire(path.join(dir, 'denali-build'));
+    if (LocalBuilder && this.constructor === Builder) {
+      return new LocalBuilder(dir, project, preseededAddons);
+    }
     this.dir = dir;
     this.project = project;
-    this.lint = options.lint;
-    this.environment = options.environment;
+    this.preseededAddons = preseededAddons;
+    this.isRootBuilder = this.dir === project.dir;
+    // Inherit the environment from the project, *except* when this builder is
+    // representing an addon dependency and the environment is test. Basically,
+    // when we run tests, we don't want addon dependencies building for test.
+    if (!this.isRootBuilder && project.environment === 'test') {
+      this.environment = 'development';
+    } else {
+      this.environment = project.environment;
+    }
+    this.lint = this.isRootBuilder ? this.lint : false;
 
     this.pkg = require(path.join(this.dir, 'package.json'));
+    this.addons = discoverAddons(dir, { preseededAddons });
   }
 
   get isAddon() {
@@ -57,6 +73,13 @@ export default class BuildOrigin {
     };
   }
 
+  treesForAddons() {
+    let addons = discoverAddons(this.dir, { preseededAddons: this.preseededAddons });
+    let builders = addons.map((addonDir) => new Builder(addonDir, this.project));
+    let addonTrees = builders.map((builder) => builder.toTree());
+    return new MergeTree(addonTrees);
+  }
+
   toTree() {
     let dirs = this.sourceDirs();
 
@@ -71,7 +94,7 @@ export default class BuildOrigin {
 
     // We do this first because broccoli-lint-eslint is weird
     // https://github.com/ember-cli/broccoli-lint-eslint/pull/25
-    if (this.lint) {
+    if (this.project.lint) {
       // If it's in test environment, generate test modules for each linted file
       if (this.project.environment === 'test') {
         let lintTestTrees = sourceTrees.map((tree) => {
@@ -90,6 +113,7 @@ export default class BuildOrigin {
 
     sourceTrees = sourceTrees.map((tree) => this.transformSourceTree(tree));
     sourceTrees.push(new PackageTree(this.pkg));
+    sourceTrees.push(this.treesForAddons());
     let mergedSource = new MergeTree(sourceTrees, { overwrite: true });
 
     if (this.isAddon) {

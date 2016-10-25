@@ -5,7 +5,6 @@ import nsp from 'nsp';
 import broccoli from 'broccoli';
 import { Watcher } from 'broccoli/lib';
 import rimraf from 'rimraf';
-import MergeTree from 'broccoli-merge-trees';
 import printSlowNodes from 'broccoli-slow-trees';
 import { sync as copyDereferenceSync } from 'copy-dereference';
 import chalk from 'chalk';
@@ -25,11 +24,10 @@ export default class Project {
     this.audit = options.audit;
 
     this.pkg = require(path.join(this.dir, 'package.json'));
-    this.addons = discoverAddons(this.dir, {
-      environment: this.environment,
-      preseededAddons: this.isAddon ? [ this.dir ] : null
-    });
-    this.buildTree = this._createBuildTree();
+    let buildPath = this.isAddon ? path.join(this.dir, 'test', 'dummy') : this.dir;
+    let preseededAddons = this.isAddon ? [ this.dir ] : [];
+    let builder = new Builder(buildPath, this, preseededAddons);
+    this.buildTree = builder.toTree();
   }
 
   get isAddon() {
@@ -113,6 +111,11 @@ export default class Project {
   }
 
   findBlueprint(name) {
+    this.addons = discoverAddons(this.dir, {
+      environment: this.environment,
+      recurse: false,
+      preseededAddons: this.isAddon ? [ this.dir ] : null
+    });
     // Search every addon plus this app, with precedence given to the app
     let blueprintOrigins = this.addons.concat([ this.dir ]);
     let allBlueprints = blueprintOrigins.reduce((blueprints, originDir) => {
@@ -132,48 +135,6 @@ export default class Project {
       return blueprints;
     }, {});
     return allBlueprints[name];
-  }
-
-  _createBuildTree() {
-    let appPath = this.isAddon ? path.join(this.dir, 'test', 'dummy') : this.dir;
-    let app = this._builderForDir(appPath, {
-      lint: this.lint,
-      environment: this.environment
-    });
-    let addons = this.addons.map((addonDir) => {
-      // By default, addons are built with the same environment as the consuming
-      // app, but with two exceptions:
-      // 1. If the consuming app env is "test", the addons are built with an env
-      //    of "development", since we only want to test the consuming app.
-      let environment = this.environment === 'test' ? 'development' : this.environment;
-      // 2. If this is an addon & dummy app, then we make a special case
-      //    exception for the addon itself. So if we run `denali test` in an
-      //    addon folder, it will build the dummy app and the addon under test
-      //    with an env of "test" (but all *other* addons will be "development")
-      if (addonDir === this.dir) {
-        environment = this.environment;
-      }
-      return this._builderForDir(addonDir, {
-        lint: addonDir === this.dir ? this.lint : false,
-        environment,
-        app
-      });
-    });
-
-    let trees = addons.map((addon) => addon.toTree());
-    trees.push(app.toTree());
-    return new MergeTree(trees, { overwrite: true });
-  }
-
-  _builderForDir(dir, options = {}) {
-    let BuilderClass;
-    if (fs.existsSync(path.join(dir, 'denali-build.js'))) {
-      BuilderClass = require(path.join(dir, 'denali-build.js'));
-      BuilderClass = BuilderClass.default || BuilderClass;
-    } else {
-      BuilderClass = Builder;
-    }
-    return new BuilderClass(dir, this, options);
   }
 
   _finishBuild(results, outputDir) {
@@ -216,7 +177,9 @@ export default class Project {
       } catch (e) {
         if (e.message.match(/EEXIST/)) {
           if (isDir(path.join(source, 'node_modules'))) {
-            fs.mkdirSync(path.join(dest, 'node_modules'));
+            if (!isDir(path.join(dest, 'node_modules'))) {
+              fs.mkdirSync(path.join(dest, 'node_modules'));
+            }
             this._linkDependencies(path.join(source, 'node_modules'), path.join(dest, 'node_modules'));
           }
         } else {

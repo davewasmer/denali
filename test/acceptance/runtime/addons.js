@@ -51,12 +51,6 @@ test('addons > load recursively', async () => {
       }
     }
   `);
-  // console.log(`
-  //   appPath: ${ appPath }
-  //   addonPath: ${ addonPath }
-  //   nestedAddonPath: ${ nestedAddonPath }
-  // `);
-  // await new Promise((resolve) => {});
 
   let server = new CommandAcceptanceTest('server --port 3003', {
     dir: appPath,
@@ -67,7 +61,6 @@ test('addons > load recursively', async () => {
       DENALI_ENV: 'development'
     },
     checkOutput(stdout) {
-      console.log(stdout);
       // Do we see our signal flag from above?
       return stdout.indexOf('foobar') > -1;
     }
