@@ -1,76 +1,59 @@
-import expect from 'must';
-import { setupApp } from 'denali';
+import test from 'ava';
+import { AppAcceptanceTest } from 'denali';
 
-describe('<%= pluralHumanizedName %> resource', () => {
+test.beforeEach('setup app', (t) => {
+  t.context.app = new AppAcceptanceTest();
+});
 
-  setupApp();
-
-  describe('POST /<%= pluralHumanizedName %>', () => {
-    it('should create a <%= name %>', function() {
-      return this.app.post('/<%= pluralName %>', {
-          // Add the <%= name %> payload here
-      }).then(({ status /* , body */ }) => {
-        expect(status).to.equal(201);
-      });
-    });
+test('POST /<%= pluralHumanizedName %> > creates a <%= name %>', async (t) => {
+  let result = await t.context.app.post('/<%= pluralName %>', {
+      // Add the <%= name %> payload here
   });
 
-  describe('GET /<%= pluralHumanizedName %>', () => {
-    it('should list <%= pluralHumanizedName %>', function() {
-      return this.app.get('/<%= pluralName %>')
-        .then(({ status /* , body */ }) => {
-          expect(status).to.equal(200);
-        });
-    });
+  t.equal(result.status, 201);
+  // t.equal(result.body.foo, 'bar');
+});
+
+test('GET /<%= pluralHumanizedName %> > should list <%= pluralHumanizedName %>', async (t) => {
+  let result = await t.context.app.get('/<%= pluralName %>');
+
+  t.equal(result.status, 200);
+  // t.equal(result.body.foo, 'bar');
+});
+
+test('GET /<%= pluralHumanizedName %>/:id > should show a <%= name %>', async (t) => {
+  let { body } = await t.context.app.post('/<%= pluralName %>', {
+      // Add the <%= name %> payload here
+  });
+  let id = body.data.id;
+
+  let result = await t.context.app.get(`/<%= pluralName %>/${ id }`);
+
+  t.equal(result.status, 200);
+  // t.equal(result.body.foo, 'bar');
+});
+
+test('PATCH /<%= pluralHumanizedName %>/:id > should update a <%= name %>', async (t) => {
+  let { body } = await t.context.app.post('/<%= pluralName %>', {
+      // Add the <%= name %> payload here
+  });
+  let id = body.data.id;
+
+  let result = await t.context.app.patch(`/<%= pluralName %>/${ id }`, {
+      // Add the <%= name %> payload here
   });
 
-  describe('GET /<%= pluralHumanizedName %>/:id', () => {
-    before(function() {
-      return this.app.post('/<%= pluralName %>', {
-          // Add the <%= name %> payload here
-      }).then(({ body }) => {
-        this.id = body.data.id;
-      });
-    });
-    it('should show a <%= name %>', function() {
-      return this.app.get(`/<%= pluralName %>/${ this.id }`)
-        .then(({ status /* , body */ }) => {
-          expect(status).to.equal(200);
-        });
-    });
-  });
+  t.equal(result.status, 200);
+  // t.equal(result.body.foo, 'bar');
+});
 
-  describe('PATCH /<%= pluralHumanizedName %>/:id', () => {
-    before(function() {
-      return this.app.post('/<%= pluralName %>', {
-          // Add the <%= name %> payload here
-      }).then(({ body }) => {
-        this.id = body.data.id;
-      });
-    });
-    it('should update a <%= name %>', function() {
-      return this.app.patch(`/<%= pluralName %>/${ this.id }`, {
-          // Add the <%= name %> payload here
-      }).then(({ status /* , body */ }) => {
-        expect(status).to.equal(200);
-      });
-    });
+test('DELETE /<%= pluralHumanizedName %>/:id > should delete a <%= name %>', async (t) => {
+  let { body } = await t.context.app.post('/<%= pluralName %>', {
+      // Add the <%= name %> payload here
   });
+  let id = body.data.id;
 
-  describe('DELETE /<%= pluralHumanizedName %>/:id', () => {
-    before(function() {
-      return this.app.post('/<%= pluralName %>', {
-          // Add the <%= name %> payload here
-      }).then(({ body }) => {
-        this.id = body.data.id;
-      });
-    });
-    it('should delete a <%= name %>', function() {
-      return this.app.delete(`/<%= pluralName %>/${ this.id }`)
-        .then(({ status /* , body */ }) => {
-          expect(status).to.equal(204);
-        });
-    });
-  });
+  let result = await t.context.app.delete(`/<%= pluralName %>/${ id }`);
 
+  t.equal(result.status, 204);
 });

@@ -1,3 +1,3 @@
-describe('<%= className %>Model', function() {
-  it('should have a unit test!');
-});
+import test from 'ava';
+
+test.todo('<%= className %>Model');

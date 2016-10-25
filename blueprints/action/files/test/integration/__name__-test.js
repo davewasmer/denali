@@ -1,3 +1,3 @@
-describe('<%= name %> action', function() {
-  it('should have an integration test!');
-});
+import test from 'ava';
+
+test.todo('<%= name %> action');

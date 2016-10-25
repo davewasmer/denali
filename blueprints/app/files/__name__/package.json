@@ -7,7 +7,7 @@
   },
   "private": true,
   "engines": {
-    "node": ">=6.0.0"
+    "node": ">=6.2.0"
   },
   "dependencies": {
     "babel-plugin-transform-class-properties": "^6.8.0",
@@ -20,8 +20,6 @@
     "lodash": "^4.0.0"
   },
   "devDependencies": {
-    "babel-eslint": "^6.0.4",
-    "mocha": "^3.0.2",
-    "must": "^0.13.1"
+    "babel-eslint": "^6.0.4"
   }
 }

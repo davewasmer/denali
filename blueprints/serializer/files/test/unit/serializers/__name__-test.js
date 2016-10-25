@@ -1,3 +1,3 @@
-describe('<%= className %>Serializer', function() {
-  it('should have unit tests!');
-});
+import test from 'ava';
+
+test.todo('<%= className %>Serializer');

@@ -1,14 +1,8 @@
-import expect from 'must';
-import { setupApp } from 'denali';
+import test from 'ava';
+import { AppAcceptanceTest } from 'denali';
 
-describe('GET /', function() {
-
-  setupApp();
-
-  it('should return a welcome message', function() {
-    return this.app.get('/').then(({ body }) => {
-      expect(body.message).to.equal('Welcome to Denali!');
-    });
-  });
-
+test('GET / > should return a welcome message', async (t) => {
+  let app = new AppAcceptanceTest();
+  let { body } = await app.get('/');
+  t.equal(body.message, 'Welcome to Denali!');
 });

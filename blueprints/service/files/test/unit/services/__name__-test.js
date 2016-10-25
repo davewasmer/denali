@@ -1,9 +1,3 @@
-import ApplicationSerializer from './application';
+import test from 'ava';
 
-export default ApplicationSerializer.extends({
-
-  attributes: [],
-
-  relationships: {}
-
-});
+test.todo('<%= className %>Service');
