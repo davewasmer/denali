@@ -37,6 +37,9 @@ export default class Project {
   }
 
   build(outputDir = 'dist') {
+    if (!path.isAbsolute(outputDir)) {
+      outputDir = path.join(process.cwd(), outputDir);
+    }
     this.startTime = process.hrtime();
     let broccoliBuilder = new broccoli.Builder(this.buildTree);
     return broccoliBuilder.build()
@@ -44,6 +47,8 @@ export default class Project {
         this._finishBuild(results, outputDir);
       }).finally(() => {
         return broccoliBuilder.cleanup();
+      }).then(() => {
+        return outputDir;
       }).catch((err) => {
         if (err.file) {
           ui.error(`File: ${ err.file }`);
@@ -93,23 +98,19 @@ export default class Project {
   }
 
   createApplication() {
-    let output = 'dist';
-    return this.build(output)
-      .then(() => {
-        let Application = tryRequire(path.join(output, 'app/application'));
-        if (!Application) {
-          ui.error(`Error loading your application - expected /app/application.js to exist`);
-          throw new Error('Invalid application export');
-        }
-        return new Application({
-          dir: output,
-          environment: this.environment
-        });
-      }).catch((error) => {
-        ui.error('Error instantiating application:');
-        ui.error(error.stack);
-        throw error;
+    return this.build().then((outputDir) => {
+      let Application = tryRequire(path.join(outputDir, 'app', 'application'));
+      if (!Application) {
+        throw new Error('Denali was unable to load app/application.js.');
+      }
+      return new Application({
+        dir: outputDir,
+        environment: this.environment
       });
+    }).catch((error) => {
+      ui.error(error.stack);
+      throw error;
+    });
   }
 
   findBlueprint(name) {
