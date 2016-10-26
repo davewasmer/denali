@@ -50,6 +50,9 @@ export default class AppBlueprint extends Blueprint {
         }).then(() => {
           spinner.stop();
           ui.success('Installing dependencies ... done ✔');
+        }).catch((error) => {
+          ui.error('Denali encountered a problem while trying to install the dependencies for your new app:');
+          ui.error(error.stack || error.message || error);
         });
       }
     }).then(() => {
