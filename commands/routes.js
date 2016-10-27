@@ -1,8 +1,8 @@
 import dedent from 'dedent-js';
 import CliTable from 'cli-table2';
-import ui from '../cli/ui';
-import Command from '../cli/command';
-import Project from '../cli/project';
+import ui from '../lib/cli/ui';
+import Command from '../lib/cli/command';
+import Project from '../lib/cli/project';
 
 export default class RoutesCommand extends Command {
 

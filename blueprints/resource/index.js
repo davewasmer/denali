@@ -2,7 +2,7 @@ import upperFirst from 'lodash/upperFirst';
 import camelCase from 'lodash/camelCase';
 import lowerCase from 'lodash/lowerCase';
 import { singularize, pluralize } from 'inflection';
-import Blueprint from '../../cli/blueprint';
+import Blueprint from '../../lib/cli/blueprint';
 
 export default class ResourceBlueprint extends Blueprint {
 

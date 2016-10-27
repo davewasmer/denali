@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import ui from '../cli/ui';
+import ui from '../lib/cli/ui';
 import dedent from 'dedent-js';
-import Command from '../cli/command';
-import Project from '../cli/project';
+import Command from '../lib/cli/command';
+import Project from '../lib/cli/project';
 import padEnd from 'lodash/padEnd';
 
 export default class GenerateCommand extends Command {

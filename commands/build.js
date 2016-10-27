@@ -1,6 +1,6 @@
 import dedent from 'dedent-js';
-import Command from '../cli/command';
-import Project from '../cli/project';
+import Command from '../lib/cli/command';
+import Project from '../lib/cli/project';
 
 export default class BuildCommand extends Command {
 

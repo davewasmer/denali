@@ -3,8 +3,8 @@ import Promise from 'bluebird';
 import { exec } from 'child_process';
 import startCase from 'lodash/startCase';
 import commandExistsCallback from 'command-exists';
-import ui from '../../cli/ui';
-import Blueprint from '../../cli/blueprint';
+import ui from '../../lib/cli/ui';
+import Blueprint from '../../lib/cli/blueprint';
 import pkg from '../../package.json';
 
 const run = Promise.promisify(exec);

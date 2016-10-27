@@ -2,9 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import dedent from 'dedent-js';
 import { padEnd } from 'lodash';
-import ui from '../cli/ui';
-import Command from '../cli/command';
-import Project from '../cli/project';
+import ui from '../lib/cli/ui';
+import Command from '../lib/cli/command';
+import Project from '../lib/cli/project';
 
 export default class DestroyCommand extends Command {
 

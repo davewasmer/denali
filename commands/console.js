@@ -1,9 +1,9 @@
 import repl from 'repl';
 import dedent from 'dedent-js';
 import chalk from 'chalk';
-import ui from '../cli/ui';
-import Command from '../cli/command';
-import Project from '../cli/project';
+import ui from '../lib/cli/ui';
+import Command from '../lib/cli/command';
+import Project from '../lib/cli/project';
 
 export default class ConsoleCommand extends Command {
 

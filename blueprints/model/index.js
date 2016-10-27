@@ -1,6 +1,6 @@
 import upperFirst from 'lodash/upperFirst';
 import camelCase from 'lodash/camelCase';
-import Blueprint from '../../cli/blueprint';
+import Blueprint from '../../lib/cli/blueprint';
 
 export default class ModelBlueprint extends Blueprint {
 

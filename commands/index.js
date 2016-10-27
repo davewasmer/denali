@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import ui from '../cli/ui';
+import ui from '../lib/cli/ui';
 import findKey from 'lodash/findKey';
 import discoverAddons from '../lib/utils/discover-addons';
 

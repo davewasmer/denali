@@ -1,6 +1,6 @@
 import dedent from 'dedent-js';
-import ui from '../cli/ui';
-import Command from '../cli/command';
+import ui from '../lib/cli/ui';
+import Command from '../lib/cli/command';
 import { exec } from 'child_process';
 
 export default class InstallCommand extends Command {

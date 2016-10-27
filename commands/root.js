@@ -1,8 +1,8 @@
 import dedent from 'dedent-js';
 import path from 'path';
 import resolve from 'resolve';
-import ui from '../cli/ui';
-import Command from '../cli/command';
+import ui from '../lib/cli/ui';
+import Command from '../lib/cli/command';
 import forIn from 'lodash/forIn';
 import padEnd from 'lodash/padEnd';
 

@@ -1,6 +1,6 @@
 import dedent from 'dedent-js';
 import path from 'path';
-import Command from '../cli/command';
+import Command from '../lib/cli/command';
 import AddonBlueprint from '../blueprints/addon';
 
 export default class AddonCommand extends Command {

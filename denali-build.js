@@ -1,4 +1,4 @@
-import Builder from './cli/builder';
+import Builder from './lib/cli/builder';
 
 export default class DenaliBuilder extends Builder {
 

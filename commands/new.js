@@ -1,6 +1,6 @@
 import dedent from 'dedent-js';
 import path from 'path';
-import Command from '../cli/command';
+import Command from '../lib/cli/command';
 import AppBlueprint from '../blueprints/app';
 
 export default class NewCommand extends Command {

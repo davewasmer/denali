@@ -1,8 +1,8 @@
 import dedent from 'dedent-js';
 import { spawn } from 'child_process';
-import ui from '../cli/ui';
-import Command from '../cli/command';
-import Project from '../cli/project';
+import ui from '../lib/cli/ui';
+import Command from '../lib/cli/command';
+import Project from '../lib/cli/project';
 import assign from 'lodash/assign';
 
 export default class ServerCommand extends Command {
