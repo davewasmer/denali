@@ -61,6 +61,11 @@ export default class ServerCommand extends Command {
       description: 'The directory to write the compiled app to. Defaults to a tmp directory',
       defaultValue: 'dist',
       type: String
+    },
+    'print-slow-trees': {
+      description: 'Print out an analysis of the build process, showing the slowest nodes.',
+      defaultValue: false,
+      type: Boolean
     }
   }
 
@@ -71,6 +76,7 @@ export default class ServerCommand extends Command {
 
     this.project = new Project({
       environment: this.environment,
+      printSlowTrees: flags['print-slow-trees'],
       audit: flags.audit || flags.environment === 'development',
       lint: flags.lint || flags.environment !== 'production'
     });

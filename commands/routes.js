@@ -22,12 +22,18 @@ export default class RoutesCommand extends Command {
       description: 'The target environment to build for.',
       defaultValue: 'development',
       type: String
+    },
+    'print-slow-trees': {
+      description: 'Print out an analysis of the build process, showing the slowest nodes.',
+      defaultValue: false,
+      type: Boolean
     }
   };
 
   run({ flags }) {
     let project = new Project({
-      environment: flags.environment
+      environment: flags.environment,
+      printSlowTrees: flags['print-slow-trees']
     });
     project.createApplication().then((application) => {
       return application.runInitializers().then(() => {

@@ -27,6 +27,11 @@ export default class BuildCommand extends Command {
       description: 'Continuously watch the source files and rebuild on changes',
       defaultValue: false,
       type: Boolean
+    },
+    'print-slow-trees': {
+      description: 'Print out an analysis of the build process, showing the slowest nodes.',
+      defaultValue: false,
+      type: Boolean
     }
   };
 
@@ -34,7 +39,8 @@ export default class BuildCommand extends Command {
 
   run({ flags }) {
     let project = new Project({
-      environment: flags.environment
+      environment: flags.environment,
+      printSlowTrees: flags['print-slow-trees']
     });
 
     if (flags.watch) {

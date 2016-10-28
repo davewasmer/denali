@@ -20,6 +20,11 @@ export default class ConsoleCommand extends Command {
       description: 'The target environment to build for.',
       defaultValue: 'development',
       type: String
+    },
+    'print-slow-trees': {
+      description: 'Print out an analysis of the build process, showing the slowest nodes.',
+      defaultValue: false,
+      type: Boolean
     }
   };
 
@@ -28,7 +33,8 @@ export default class ConsoleCommand extends Command {
   run({ flags }) {
     ui.info(`Loading ${ flags.environment } environment. Type '.help' for details`);
     let project = new Project({
-      environment: flags.environment
+      environment: flags.environment,
+      printSlowTrees: flags['print-slow-trees']
     });
     project.createApplication().then((application) => {
       if (application.environmnet === 'production') {

@@ -14,3 +14,19 @@ test('routes command > prints list of configured routes', async (t) => {
 └───────┴────────┘
   `));
 });
+
+test('routes command > prints list of configured routes', async (t) => {
+  let generate = new CommandAcceptanceTest('routes --print-slow-trees');
+
+  let result = await generate.run();
+  t.true(result.stdout.includes(dedent`
+    Slowest Trees                                 | Total
+  `));
+  t.true(result.stdout.includes(dedent`
+┌───────┬────────┐
+│ URL   │ ACTION │
+├───────┼────────┤
+│ GET / │ index  │
+└───────┴────────┘
+  `));
+});
