@@ -52,7 +52,7 @@ function discoverCommands(dir) {
     return {};
   }
   return fs.readdirSync(dir).filter((filename) => {
-    return fs.statSync(path.join(dir, filename)).isFile() && path.extname(filename) === '.js';
+    return fs.statSync(path.join(dir, filename)).isFile() && path.extname(filename) === '.js' && filename !== 'index.js';
   }).reduce((commands, filename) => {
     let Command = require(path.join(dir, filename)).default;
     commands[Command.commandName] = Command;
