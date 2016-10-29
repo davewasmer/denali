@@ -19,7 +19,7 @@ export default class AddonBlueprint extends Blueprint {
 
   flags = {
     'skip-deps': {
-      description: 'Do not install dependencies on new app',
+      description: 'Do not install dependencies on new addon',
       defaultValue: false,
       type: Boolean
     },
