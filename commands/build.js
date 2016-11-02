@@ -40,7 +40,8 @@ export default class BuildCommand extends Command {
   run({ flags }) {
     let project = new Project({
       environment: flags.environment,
-      printSlowTrees: flags['print-slow-trees']
+      printSlowTrees: flags['print-slow-trees'],
+      lint: flags.environment !== 'production'
     });
 
     if (flags.watch) {
