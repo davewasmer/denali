@@ -135,6 +135,25 @@ test('Action > should render with the model type serializer if a model was rende
   return action.run();
 });
 
+test('Action > should render with the application serializer if all options exhausted', async (t) => {
+  t.plan(2);
+  let mock = mockReqRes();
+  class TestAction extends Action {
+    respond() {
+      t.pass();
+      return {};
+    }
+  }
+  mock.container.register('serializer:application', {
+    serialize() {
+      t.pass();
+    }
+  });
+  let action = new TestAction(mock);
+
+  return action.run();
+});
+
 test('Action > filters > invokes before filters prior to respond()', async (t) => {
   let sequence = [];
   class TestAction extends Action {
