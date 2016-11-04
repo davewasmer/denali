@@ -1,0 +1,11 @@
+{
+  "presets": [ "latest" ],
+  "plugins": [
+    "transform-class-properties",
+    "transform-async-to-generator"
+  ],
+  "ignore": [
+    "blueprints/*/files/**",
+    "test/dummy/**"
+  ]
+}
