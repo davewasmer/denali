@@ -31,12 +31,15 @@ if (!pkgPath) {
 
 // Package.json found
 } else {
+  var pkg = require(pkgPath);
   var pkgDir = path.dirname(path.resolve(pkgPath));
   var localDenali;
   try {
     localDenali = resolve.sync('denali', { basedir: pkgDir });
   } catch (e) {}
-  if (localDenali) {
+  // If a local copy of denali exists, use that, unless we are actually running
+  // this in the denali repo itself
+  if (localDenali && pkg.name !== 'denali') {
     var localDenaliPkgDir = path.dirname(findup('package.json', { cwd: localDenali }));
     require(path.join(localDenaliPkgDir, 'commands', 'index')).default(localDenaliPkgDir);
   } else {
