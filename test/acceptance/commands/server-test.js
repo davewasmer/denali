@@ -38,7 +38,7 @@ test('server command > launches a server based on the dummy app in an addon', as
     env: {
       DENALI_ENV: 'development'
     },
-    checkOutput(stdout, stderr) {
+    checkOutput(stdout) {
       return stdout.indexOf('dummy@0.0.0 server up') > -1;
     }
   });
