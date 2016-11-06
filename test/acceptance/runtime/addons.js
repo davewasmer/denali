@@ -21,7 +21,9 @@ function linkDependency(pkgDir, dependencyName, dependencyDir) {
   fs.symlinkSync(dependencyDir, dest);
 }
 
-test('addons > load recursively', async () => {
+test('addons > load first-level addons only', async (t) => {
+  t.plan(1);
+
   let options = {
     populateWithDummy: false,
     env: { DENALI_ENV: 'development' }
@@ -46,11 +48,19 @@ test('addons > load recursively', async () => {
   addDependency(addonPath, 'my-nested-addon', '*');
   linkDependency(addonPath, 'my-nested-addon', nestedAddonPath);
   // Add our signal flag, an initializer that just logs something out
+  fs.writeFileSync(path.join(addonPath, 'config', 'initializers', 'my-initializer.js'), `
+    export default {
+      name: 'my-initializer',
+      initialize() {
+        console.log('shallow');
+      }
+    }
+  `);
   fs.writeFileSync(path.join(nestedAddonPath, 'config', 'initializers', 'my-initializer.js'), `
     export default {
       name: 'my-initializer',
       initialize() {
-        console.log('foobar');
+        console.log('deep');
       }
     }
   `);
@@ -64,8 +74,13 @@ test('addons > load recursively', async () => {
       DENALI_ENV: 'development'
     },
     checkOutput(stdout) {
-      // Do we see our signal flag from above?
-      return stdout.indexOf('foobar') > -1;
+      if (stdout.indexOf('deep') > -1) {
+        t.fail();
+      }
+      if (stdout.indexOf('shallow') > -1) {
+        t.pass();
+        return true;
+      }
     }
   });
 });

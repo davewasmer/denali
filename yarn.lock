@@ -2038,9 +2038,21 @@ denali-babel@^0.0.1:
     eslint-config-denali "^1.1.0"
     lodash "^4.16.4"
 
-denali-eslint@^0.0.2:
+denali-babel@^0.0.2:
   version "0.0.2"
-  resolved "https://registry.yarnpkg.com/denali-eslint/-/denali-eslint-0.0.2.tgz#18cc40f377f326596f5ea4082bf212f0d9532cdc"
+  resolved "https://registry.yarnpkg.com/denali-babel/-/denali-babel-0.0.2.tgz#ad6970bc20d3ef52e77e4d731e70f97f9d9b52b7"
+  dependencies:
+    babel-plugin-transform-async-to-generator "^6.16.0"
+    babel-plugin-transform-class-properties "^6.18.0"
+    babel-preset-latest "^6.16.0"
+    bluebird "^3.4.6"
+    broccoli-babel-transpiler "^6.0.0-alpha.2"
+    eslint-config-denali "^1.1.0"
+    lodash "^4.16.4"
+
+denali-eslint@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/denali-eslint/-/denali-eslint-0.0.3.tgz#5265d1398b61377d48953102f683974c7297a303"
   dependencies:
     babel-plugin-transform-async-to-generator "^6.16.0"
     babel-plugin-transform-class-properties "^6.18.0"
@@ -2049,7 +2061,6 @@ denali-eslint@^0.0.2:
     broccoli-filter "^1.2.4"
     chalk "^1.1.3"
     dedent-js "^1.0.1"
-    denali "0.0.13"
     denali-babel "^0.0.1"
     eslint "^3.9.1"
     eslint-config-denali "^1.1.0"
