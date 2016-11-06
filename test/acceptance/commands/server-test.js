@@ -14,6 +14,7 @@ function linkDependency(pkgDir, dependencyName, dependencyDir) {
 
 test('server command > launches a server', async () => {
   let server = new CommandAcceptanceTest('server --port 3001');
+  linkDependency(path.join(server.dir, 'foobar'), 'denali', server.projectRoot);
 
   return server.spawn({
     env: {
