@@ -1192,7 +1192,7 @@ broccoli-kitchen-sink-helpers@^0.2.0, broccoli-kitchen-sink-helpers@^0.2.5, broc
     glob "^5.0.10"
     mkdirp "^0.5.1"
 
-broccoli-kitchen-sink-helpers@^0.3.1:
+broccoli-kitchen-sink-helpers@^0.3.0, broccoli-kitchen-sink-helpers@^0.3.1:
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/broccoli-kitchen-sink-helpers/-/broccoli-kitchen-sink-helpers-0.3.1.tgz#77c7c18194b9664163ec4fcee2793444926e0c06"
   dependencies:
@@ -1254,6 +1254,14 @@ broccoli-slow-trees@^1.0.0, broccoli-slow-trees@1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/broccoli-slow-trees/-/broccoli-slow-trees-1.1.0.tgz#426c5724e008107e4573f73e8a9ca702916b78f7"
 
+broccoli-slow-trees@^2.0.0, broccoli-slow-trees@2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/broccoli-slow-trees/-/broccoli-slow-trees-2.0.0.tgz#9741afe992787add64aec7f7c8211dfcc058278d"
+
+broccoli-source@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/broccoli-source/-/broccoli-source-1.1.0.tgz#54f0e82c8b73f46580cbbc4f578f0b32fca8f809"
+
 broccoli-stew, broccoli-stew@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/broccoli-stew/-/broccoli-stew-1.4.0.tgz#1bdb0a1804d62a419d190abc26acb3c91878154d"
@@ -1311,6 +1319,24 @@ broccoli@~0.13.3:
     promise-map-series "^0.2.0"
     rsvp "^3.0.6"
     tiny-lr "^0.1.4"
+
+broccoli@1.0.0-beta.7:
+  version "1.0.0-beta.7"
+  resolved "https://registry.yarnpkg.com/broccoli/-/broccoli-1.0.0-beta.7.tgz#49dbca6cc41c09f1c710778e5524db38a1fae8da"
+  dependencies:
+    broccoli-kitchen-sink-helpers "^0.3.0"
+    broccoli-slow-trees "^2.0.0"
+    broccoli-source "^1.1.0"
+    commander "^2.5.0"
+    connect "^3.3.3"
+    copy-dereference "^1.0.0"
+    findup-sync "^0.2.1"
+    handlebars "^4.0.4"
+    mime "^1.2.11"
+    rimraf "^2.4.3"
+    rsvp "^3.0.17"
+    tmp "0.0.28"
+    underscore.string "^3.2.2"
 
 buf-compare@^1.0.0:
   version "1.0.1"
@@ -5087,7 +5113,7 @@ split2@^2.0.0:
   dependencies:
     through2 "~2.0.0"
 
-sprintf-js@~1.0.2:
+sprintf-js@^1.0.3, sprintf-js@~1.0.2:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
 
@@ -5421,6 +5447,13 @@ uid2@0.0.3:
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/uid2/-/uid2-0.0.3.tgz#483126e11774df2f71b8b639dcd799c376162b82"
 
+underscore.string@^3.2.2:
+  version "3.3.4"
+  resolved "https://registry.yarnpkg.com/underscore.string/-/underscore.string-3.3.4.tgz#2c2a3f9f83e64762fdc45e6ceac65142864213db"
+  dependencies:
+    sprintf-js "^1.0.3"
+    util-deprecate "^1.0.2"
+
 underscore.string@~2.3.3:
   version "2.3.3"
   resolved "https://registry.yarnpkg.com/underscore.string/-/underscore.string-2.3.3.tgz#71c08bf6b428b1133f37e78fa3a21c82f7329b0d"
@@ -5474,7 +5507,7 @@ user-home@^2.0.0:
   dependencies:
     os-homedir "^1.0.0"
 
-util-deprecate@~1.0.1:
+util-deprecate@^1.0.2, util-deprecate@~1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
 
