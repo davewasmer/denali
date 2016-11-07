@@ -81,6 +81,10 @@ export default class ServerCommand extends Command {
       lint: flags.lint || flags.environment !== 'production'
     });
 
+    process.on('exit', this.cleanExit.bind(this));
+    process.on('SIGINT', this.cleanExit.bind(this));
+    process.on('SIGTERM', this.cleanExit.bind(this));
+
     if (flags.watch || flags.environment === 'development') {
       this.project.watch({
         outputDir: flags.output,
@@ -97,6 +101,12 @@ export default class ServerCommand extends Command {
       .then(() => {
         this.startServer(flags.output);
       });
+    }
+  }
+
+  cleanExit() {
+    if (this.server) {
+      this.server.kill();
     }
   }
 
@@ -117,9 +127,6 @@ export default class ServerCommand extends Command {
     this.server.on('exit', (code) => {
       let result = code === 0 ? 'exited' : 'crashed';
       ui.error(`Server ${ result }. waiting for changes to restart ...`);
-    });
-    process.on('exit', () => {
-      this.server.kill();
     });
   }
 
