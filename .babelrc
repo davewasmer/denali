@@ -7,5 +7,10 @@
   "ignore": [
     "blueprints/*/files/**",
     "test/dummy/**"
-  ]
+  ],
+  "env": {
+    "test": {
+      "plugins": [ "istanbul" ]
+    }
+  }
 }
