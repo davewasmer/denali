@@ -112,17 +112,18 @@ export default class ServerCommand extends Command {
 
   startServer(dir) {
     let args = [ 'app/index.js' ];
+    let defaultEnvs = {
+      PORT: this.port,
+      DENALI_ENV: this.project.environment,
+      NODE_ENV: this.project.environment
+    };
     if (this.debug) {
       args.unshift('--inspect', '--debug-brk');
     }
     this.server = spawn('node', args, {
       cwd: dir,
       stdio: [ 'pipe', process.stdout, process.stderr ],
-      env: assign({}, process.env, {
-        PORT: this.port,
-        DENALI_ENV: this.project.environment,
-        NODE_ENV: this.project.environment
-      })
+      env: assign({}, defaultEnvs, process.env)
     });
     this.server.on('exit', (code) => {
       let result = code === 0 ? 'exited' : 'crashed';
