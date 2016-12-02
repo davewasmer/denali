@@ -26,7 +26,7 @@ export default class InstallCommand extends Command {
   async run({ params }) {
     let pkgManager = await commandExists('yarn') ? 'yarn' : 'npm';
     try {
-      let stdout = await run(`npm info ${ params.addonName } --json`);
+      let stdout = await run(`${ pkgManager } info ${ params.addonName } --json`);
 
       let pkg = JSON.parse(stdout);
       let isAddon = pkg.keywords.includes('denali-addon');
