@@ -4,7 +4,6 @@ import { spawn } from 'child_process';
 import ui from '../lib/cli/ui';
 import Command from '../lib/cli/command';
 import Project from '../lib/cli/project';
-import assign from 'lodash/assign';
 
 export default class TestCommand extends Command {
 
@@ -164,16 +163,15 @@ export default class TestCommand extends Command {
       args.unshift('--serial');
     }
     let avaPath = path.join(process.cwd(), 'node_modules', '.bin', 'ava');
+    let testEnvs = this.envs(this.project);
+
+    testEnvs.DEBUG_COLORS = 1;
+    testEnvs.DEBUG_FD = 1;
+
     this.tests = spawn(avaPath, args, {
       cwd: this.output,
       stdio: [ 'pipe', process.stdout, process.stderr ],
-      env: assign({}, process.env, {
-        PORT: this.port,
-        DENALI_ENV: this.project.environment,
-        NODE_ENV: this.project.environment,
-        DEBUG_COLORS: 1,
-        DEBUG_FD: 1
-      })
+      env: testEnvs
     });
     ui.info(`===> Running ${ this.project.pkg.name } tests ...`);
     this.tests.on('exit', (code) => {
