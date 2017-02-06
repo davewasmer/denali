@@ -20,7 +20,7 @@ of endpoints for a given resource (it follows the [JSON-API recommendations for
 URL design](http://jsonapi.org/recommendations/#urls)):
 
 ```js
-this.resource('post');
+router.resource('post');
 ```
 
 will generate the following routes:
