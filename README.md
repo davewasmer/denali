@@ -11,16 +11,16 @@
 
 Denali is a tool to help you build and deliver amibitous JSON APIs. It features:
 
- * First class JSON serializers, included out of the box JSON-API support
+ * First class JSON serializers, including out of the box JSON-API support
  * A single controller class (called Actions) per endpoint
  * Flexible, declarative filter system
- * An emphasis on developer happiness - a robust CLI, poweful testing primitives,
+ * An emphasis on developer happiness - a robust CLI, powerful testing primitives,
    and support for the full lifecycle of app development
  * ORM-agnostic design - choose your favorite Node ORM, or none at all
 
 ## Why Denali?
 
-Denali should feel familiar to anyone whose worked with popular MVC frameworks
+Denali should feel familiar to anyone who has worked with popular MVC frameworks
 like Rails. But Denali has a slightly unique take on each aspect of the MVC
 pattern:
 
@@ -37,10 +37,10 @@ ecosystem.
 
 Denali's view layer is unique as well. Rather than traditional HTML rendering,
 Denali's view layer renders JSON. Instead of the usual templates and view
-classes.  we have Serializers instead, which tell Denali how to render the data
+classes, we have Serializers instead, which tell Denali how to render the data
 you supply as a response. The separation of responsibilties ensures you can
 tweak how your data is structured in your API without having to change any of
-the logic of your app. Several common formats, include JSON-API, are supported
+the logic of your app. Several common formats, including JSON-API, are supported
 out of the box, and customization is easy.
 
 ### MV(C) - Actions instead of Controllers
@@ -48,9 +48,9 @@ out of the box, and customization is easy.
 In Denali, the Action class takes the role of the controller in the application.
 But rather than a single controller class that responds to many different
 endpoints, an Action class is responsible for responding to requests against
-a single endpoint (URL + method) only. The result is powerful - since the
-an Action class directly and completely represents the app's response handler,
-we can use expressive declarative syntax to succicently define behaviors.
+a single endpoint (URL + method) only. The result is powerful - since the Action
+class directly and completely represents the app's response handler, we can use
+expressive declarative syntax to succicently define behaviors.
 
 ## Getting Started
 
@@ -68,7 +68,7 @@ $ cd my-api
 ```
 
 You can use the `server` command to run your API locally in development mode.
-The API server will automatically restart when you change make a change:
+The API server will automatically restart when you make a change:
 
 ```sh
 $ denali server
