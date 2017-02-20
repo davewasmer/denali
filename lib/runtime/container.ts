@@ -118,7 +118,8 @@ export default class Container extends DenaliObject {
       // If lookup succeeded, handle any first-time lookup chores
       if (Class) {
         if (Class.containerize || options.containerize) {
-          Class = this._containerizeClass(Class);
+          Class.container = this;
+          Class.prototype.container = this;
         }
         if (Class.singleton || options.singleton) {
           Class = new Class();
@@ -171,26 +172,6 @@ export default class Container extends DenaliObject {
       fallback: 'serializer:application'
     });
   }
-
-  /**
-   * Inject a reference to this container into the looked up class
-   */
-  // See https://github.com/Microsoft/TypeScript/pull/13743#issue-203908151
-  // tslint:disable
-  private _containerizeClass<T extends Constructor<{}>>(Class: T) {
-    let container = this; // eslint-disable-line consistent-this
-    class ContaineredClass extends Class {
-      static container = container;
-      container = container;
-    }
-    Object.defineProperty(ContaineredClass, 'name', {
-      value: Class.name,
-      writable: false,
-      configurable: true
-    });
-    return ContaineredClass;
-  }
-  // tslint:enable
 
   /**
    * Take the supplied name which can come in several forms, and normalize it.
