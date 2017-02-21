@@ -74,7 +74,7 @@ The API server will automatically restart when you make a change:
 $ denali server
 ```
 
-To learn more, check out [the docs](http://denali.js.org/).
+To learn more, check out [the docs](http://denali.js.org/) or join us on [Slack](https://denali-slack.now.sh/)
 
 ## License
 
