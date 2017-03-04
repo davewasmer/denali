@@ -21,7 +21,7 @@ export default {
       if (!modelsGroupedByAdapter.has(Adapter)) {
         modelsGroupedByAdapter.set(Adapter, []);
       }
-      modelsGroupedByAdapter.get(Adapter).push(Model);
+      modelsGroupedByAdapter.get(Adapter).push(ModelClass);
     });
     let definitions: any[] = [];
     modelsGroupedByAdapter.forEach((modelsForThisAdapter: typeof Model[], Adapter: ORMAdapter): void => {
