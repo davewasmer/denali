@@ -7,7 +7,7 @@ import * as accepts from 'accepts';
 import typeis from 'type-is';
 import * as url from 'url';
 import * as http from 'http';
-import * as uuid from 'node-uuid';
+import * as uuid from 'uuid';
 import DenaliObject from '../metal/object';
 import Route from './route';
 
