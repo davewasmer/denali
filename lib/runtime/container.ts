@@ -189,6 +189,19 @@ export default class Container extends DenaliObject {
       moduleName: camelCase(modulePath)
     };
   }
+
+  /**
+   * For a given type, returns the names of all the available modules under that
+   * type. Primarily used for debugging purposes (i.e. to show available modules
+   * when a lookup of that type fails).
+   */
+  availableForType(type: string): string[] {
+    return Object.keys(this._registry).filter((key) => {
+      return key.split(':')[0] === type;
+    }).map((key) => {
+      return key.split(':')[1];
+    });
+  }
 }
 
 

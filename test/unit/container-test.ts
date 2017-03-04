@@ -18,7 +18,7 @@ test('Container > #lookupAll(type) > returns an object with all the modules of t
   let container = new Container();
   container.register('foo:bar', { buzz: true });
   container.register('foo:buzz', { bat: true });
-  let type = container.lookupAll('foo');
+  let type = (<any> container.lookupAll('foo'));
   t.truthy(type.bar);
   t.true(type.bar.buzz);
   t.truthy(type.buzz);
@@ -45,6 +45,17 @@ test('Container > singletons > lazily instantiates singletons (i.e. on lookup)',
   }
   (<any>Class).singleton = true;
   container.register('foo:bar', Class);
+});
+
+test('Container > #availableForType() > returns all registered instances of a type', async (t) => {
+  let container = new Container();
+
+  container.register('foo:a', {a: true});
+  container.register('foo:b', {b: true});
+  container.register('foo:c', {c: true});
+  container.register('foo:d', {d: true});
+
+  t.deepEqual(container.availableForType('foo'), ['a', 'b', 'c', 'd']);
 });
 
 test.todo('Container > #lookupSerializer() > injects all serializer singletons into each serializer');
