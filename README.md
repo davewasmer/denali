@@ -1,5 +1,7 @@
 # Denali
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/denali-js/denali.svg)](https://greenkeeper.io/)
+
 [![NPM version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]
 [![Coverage][coverage-image]][coverage-url]
