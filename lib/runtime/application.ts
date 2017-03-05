@@ -143,7 +143,7 @@ export default class Application extends Addon {
    *   are.
    */
   private generateConfig(): any {
-    dotenv.config({ silent: true });
+    dotenv.config();
     let config = this._config(this.environment);
     config.environment = this.environment;
     this.container.register('config:environment', config);
