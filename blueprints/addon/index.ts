@@ -76,11 +76,11 @@ export default class AddonBlueprint extends Blueprint {
       await run('git init', { cwd: name, maxBuffer });
       await run('git add .', { cwd: name, maxBuffer });
       await run('git commit -am "Initial denali project scaffold"', { cwd: name, maxBuffer });
+      await spinner.succeed('Git repo initialized');
     } catch (e) {
-      ui.error('Unable to initialize a git repo in your new app:');
+      await spinner.fail('Unable to initialize git repo:');
       ui.error(e.stack);
     }
-    await spinner.succeed('Git repo initialized');
     await ui.info(`📦  ${ name } addon created!`);
   }
 
