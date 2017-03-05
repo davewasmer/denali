@@ -63,3 +63,38 @@ test('Router > does not attempt to serialize when action.serializer = false', as
   req.write('{}');
   await router.handle(<any>req, <any>new MockResponse());
 });
+
+test('Router > #urlFor works with string argument', (t) => {
+  let container = new Container();
+  let logger = new Logger();
+
+  container.register('action:index', class TestAction extends Action {
+    serializer = false;
+    respond() {
+      // noop
+    }
+  });
+
+  let router = new Router({ container, logger });
+  router.get('/test/:id/', 'index');
+
+  t.is(router.urlFor('index', {id: 10}), '/test/10/', 'Router should return the correctly reversed url');
+});
+
+test('Router > #urlFor works with action argument', (t) => {
+  let container = new Container();
+  let logger = new Logger();
+
+  container.register('action:index', class TestAction extends Action {
+    serializer = false;
+    respond() {
+      // noop
+    }
+  });
+
+  let router = new Router({ container, logger });
+  router.get('/test/:id/', 'index');
+
+  let TestAction = container.lookup('action:index');
+  t.is(router.urlFor(TestAction, {id: 10}), '/test/10/', 'Router should return the correctly reversed url');
+});

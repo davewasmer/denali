@@ -252,6 +252,28 @@ export default class Router extends DenaliObject implements RouterDSL {
   }
 
   /**
+   * Returns the URL for a given action. You can supply a params object which
+   * will be used to fill in the dynamic segements of the action's route (if
+   * any).
+   */
+  urlFor(action: string | Action, data: any): string | boolean {
+    if (typeof action === 'string') {
+      action = this.container.lookup(`action:${ action }`);
+    }
+    if (!action) {
+      return false;
+    }
+
+    let route: Route;
+    forEach(this.routes, (routes) => {
+      route = find(routes, { action: <Action> action });
+      return !route; // kill the iterator if we found the match
+    });
+
+    return route && route.reverse(data);
+  }
+
+  /**
    * Shorthand for `this.route('get', ...arguments)`
    *
    * @since 0.1.0
