@@ -77,7 +77,6 @@
     "ava": "^0.18.2",
     "bluebird": "^3.4.7",
     "body-parser": "^1.16.1",
-    "broccoli": "^1.1.1",
     "chalk": "^1.1.1",
     "cli-table2": "^0.2.0",
     "command-exists": "^1.0.2",
