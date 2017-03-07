@@ -266,7 +266,7 @@ export default class Router extends DenaliObject implements RouterDSL {
 
     let route: Route;
     forEach(this.routes, (routes) => {
-      route = find(routes, { action: <Action> action });
+      route = find(routes, { action: <Action>action });
       return !route; // kill the iterator if we found the match
     });
 

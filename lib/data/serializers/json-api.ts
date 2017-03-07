@@ -441,7 +441,7 @@ export default class JSONAPISerializer extends Serializer {
   protected linksForRecord(context: Context, record: Model): JsonApiLinks {
     let router: Router = this.container.lookup('router:main');
     let url = router.urlFor(`${ pluralize(record.type) }/show`, record);
-    return url ? { self: <string> url } : null;
+    return typeof url === 'string' ? { self: url } : null;
   }
 
   /**
