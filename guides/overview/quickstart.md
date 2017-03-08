@@ -15,7 +15,7 @@ It's that ever-favorite first project for a server side framework: let's build a
 First off, make sure you install Denali globally via npm:
 
 ```sh
-$ npm install -g denali
+$ npm install -g denali-cli denali
 ```
 
 
@@ -34,7 +34,6 @@ create blog/.env
 create blog/.eslintignore
 create blog/.eslintrc
 create blog/.gitattributes
-create blog/.gitignore
 create blog/.nvmrc
 create blog/.travis.yml
 create blog/CHANGELOG.md
@@ -51,14 +50,15 @@ create blog/config/initializers/.gitkeep
 create blog/config/middleware.js
 create blog/config/routes.js
 create blog/denali-build.js
+create blog/.gitignore
 create blog/package.json
 create blog/test/.eslintrc
+create blog/test/acceptance/index-test.js
 create blog/test/helpers/.gitkeep
-create blog/test/integration/index-test.js
 create blog/test/unit/.gitkeep
-✔ Installing dependencies
-✔ Setting up git repo
-✨  blog created
+✔ Dependencies installed
+✔ Git repo initialized
+📦  blog created!
 
 To launch your application, just run:
 
@@ -68,7 +68,7 @@ To launch your application, just run:
 
 Go ahead and follow that last instruction:
 
-```txt
+```sh
 $ cd blog
 $ denali server
 ✔ blog build complete (1.829s)
@@ -77,10 +77,10 @@ $ denali server
 
 Perfect! You've got your first Denali app up and running. Now let's see it in action. Hit the root endpoint with curl:
 
-```txt
+```sh
 $ curl localhost:3000
-
-  "message": "Welcome to Denali!"
+{
+   "message": "Welcome to Denali!"
 }
 ```
 
