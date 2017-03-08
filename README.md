@@ -58,6 +58,7 @@ expressive declarative syntax to succicently define behaviors.
 You can install Denali globally via npm:
 
 ```sh
+$ npm install -g typescript
 $ npm install -g denali
 ```
 
