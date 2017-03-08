@@ -58,7 +58,7 @@ expressive declarative syntax to succicently define behaviors.
 You can install Denali globally via npm:
 
 ```sh
-$ npm install -g denali
+$ npm install -g denali denali-cli
 ```
 
 Create a new application (run with Node 6.0+):
