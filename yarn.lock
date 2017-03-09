@@ -42,11 +42,12 @@
   version "3.0.37"
   resolved "https://registry.yarnpkg.com/@types/bluebird/-/bluebird-3.0.37.tgz#2e76b394aa9bea40d04241a31c0887a260283388"
 
-"@types/body-parser@^0.0.34":
-  version "0.0.34"
-  resolved "https://registry.yarnpkg.com/@types/body-parser/-/body-parser-0.0.34.tgz#2cb766935f67416bbec80fc770b79e6eeeda80b5"
+"@types/body-parser@^1.16.0":
+  version "1.16.0"
+  resolved "https://registry.yarnpkg.com/@types/body-parser/-/body-parser-1.16.0.tgz#98e9dd9664a7fa814fec2c50c95bbf9edacf5f05"
   dependencies:
     "@types/express" "*"
+    "@types/node" "*"
 
 "@types/chalk@^0.4.31":
   version "0.4.31"
