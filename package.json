@@ -61,7 +61,7 @@
     "@types/findup-sync": "^0.3.29",
     "@types/fs-extra": "^0.0.37",
     "@types/glob": "^5.0.30",
-    "@types/helmet": "^0.0.33",
+    "@types/helmet": "^0.0.34",
     "@types/http-errors": "^1.5.33",
     "@types/inflection": "^1.5.28",
     "@types/lodash": "^4.14.52",
