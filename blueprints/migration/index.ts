@@ -19,7 +19,7 @@ export default class MigrationBlueprint extends Blueprint {
     Generates a new blank migration. The filename will include the current Unix timestamp to ensure
     proper sorting and execution order when running migrations.
 
-    Guides: http://denali.js.org/master/guides/data/migrations/
+    Guides: http://denalijs.org/master/guides/data/migrations/
   `;
 
   public static params = '<name>';

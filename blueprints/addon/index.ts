@@ -29,7 +29,7 @@ export default class AddonBlueprint extends Blueprint {
     Scaffolds a new addon. Sets up the correct directory structure, initializes a git repo, and
     installs the necessary dependencies.
 
-    Guides: http://denali.js.org/master/guides/utilities/addons/
+    Guides: http://denalijs.org/master/guides/utilities/addons/
   `;
 
   public static params = '<name>';

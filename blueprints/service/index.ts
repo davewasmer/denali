@@ -16,7 +16,7 @@ export default class ServiceBlueprint extends Blueprint {
 
     Generates a blank service class.
 
-    Guides: http://denali.js.org/master/guides/application/services/
+    Guides: http://denalijs.org/master/guides/application/services/
   `;
 
   public static params = '<name>';

@@ -21,7 +21,7 @@ export default class ActionBlueprint extends Blueprint {
     Generates an action with the given name (can be a deeply nested path), along with unit test
     stubs.
 
-    Guides: http://denali.js.org/master/guides/application/actions/
+    Guides: http://denalijs.org/master/guides/application/actions/
   `;
 
   public static params = '<name>';

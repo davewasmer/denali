@@ -29,7 +29,7 @@ export default class AppBlueprint extends Blueprint {
     Scaffolds a new app. Sets up the correct directory structure, initializes a git repo, and
     installs the necessary dependencies.
 
-    Guides: http://denali.js.org/master/guides/overview/app-structure/
+    Guides: http://denalijs.org/master/guides/overview/app-structure/
   `;
 
   public static params = '<name>';

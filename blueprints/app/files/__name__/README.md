@@ -1,6 +1,6 @@
 # <%= humanizedName %>
 
-An awesome app built on the [Denali framework](http://denali.js.org/).
+An awesome app built on the [Denali framework](http://denalijs.org/).
 
 
 ## Installation

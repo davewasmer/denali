@@ -23,7 +23,7 @@ export default class ORMAdapterBlueprint extends Blueprint {
     typically an advanced use case (i.e. using a niche, specialty database). You should check to
     make sure there isn't already a Denali addon that implements the ORM adapter you need.
 
-    Guides: http://denali.js.org/master/guides/data/orm-adapters/
+    Guides: http://denalijs.org/master/guides/data/orm-adapters/
   `;
 
   public static params = '<name>';

@@ -20,7 +20,7 @@ export default class SerializerBlueprint extends Blueprint {
 
     Generates a blank serializer for the given model.
 
-    Guides: http://denali.js.org/master/guides/data/serializers/
+    Guides: http://denalijs.org/master/guides/data/serializers/
   `;
 
   public static params = '<name>';

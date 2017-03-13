@@ -20,7 +20,7 @@ export default class ModelBlueprint extends Blueprint {
 
     Generates a blank model, along with a serializer for that model, and unit tests for both.
 
-    Guides: http://denali.js.org/master/guides/data/models/
+    Guides: http://denalijs.org/master/guides/data/models/
   `;
 
   public static params = '<name>';

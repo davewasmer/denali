@@ -2,7 +2,7 @@
   "name": "denali",
   "version": "0.0.25",
   "description": "An opinionated Node framework for building robust JSON APIs",
-  "homepage": "http://denali.js.org",
+  "homepage": "http://denalijs.org",
   "repository": "denali-js/denali",
   "author": {
     "name": "Dave Wasmer",
