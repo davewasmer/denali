@@ -1,8 +1,3 @@
-import Instrumentation from '../metal/instrumentation';
-import Model from '../data/model';
-import Response from './response';
-import * as http from 'http';
-import * as createDebug from 'debug';
 import {
   assign,
   capitalize,
@@ -12,6 +7,11 @@ import {
   compact,
   map
 } from 'lodash';
+import Instrumentation from '../metal/instrumentation';
+import Model from '../data/model';
+import Response from './response';
+import * as http from 'http';
+import * as createDebug from 'debug';
 import * as assert from 'assert';
 import eachPrototype from '../metal/each-prototype';
 import DenaliObject from '../metal/object';
@@ -170,7 +170,7 @@ abstract class Action extends DenaliObject {
     this.request = options.request;
     this.logger = options.logger;
     this.container = options.container;
-    this.config = this.container.config;
+    this.config = this.container.lookup('app:main').config;
   }
 
   /**

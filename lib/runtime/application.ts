@@ -1,11 +1,13 @@
+import {
+  values,
+  constant,
+  noop
+} from 'lodash';
 import * as path from 'path';
 import * as http from 'http';
 import * as https from 'https';
 import { each, all } from 'bluebird';
 import * as dotenv from 'dotenv';
-import {
-  values
-} from 'lodash';
 import Addon, { AddonOptions } from './addon';
 import topsort from '../utils/topsort';
 import Router from './router';
@@ -14,6 +16,7 @@ import Container from './container';
 import findPlugins from 'find-plugins';
 import * as tryRequire from 'try-require';
 import * as createDebug from 'debug';
+import { Vertex } from '../utils/topsort';
 
 const debug = createDebug('denali:application');
 
@@ -72,29 +75,34 @@ export default class Application extends Addon {
    */
   public container: Container;
 
+  /**
+   * The logger instance for the entire application
+   *
+   * @since 0.1.0
+   */
+  public logger: Logger;
+
+  /**
+   * List of child addons for this app (one-level deep only, i.e. no addons-of-addons are included)
+   *
+   * @since 0.1.0
+   */
+  public addons: Addon[];
+
   constructor(options: ApplicationOptions) {
-    if (!options.container) {
-      options.container = new Container();
-      options.logger = options.logger || new Logger();
-      options.router = options.router || new Router({
-        container: options.container,
-        logger: options.logger
-      });
-      options.container.register('router:main', options.router);
-      options.container.register('logger:main', options.logger);
-    }
-    super(<AddonOptions>options);
-    this.container.register('application:main', this);
-    this.router = this.container.lookup('router:main');
-    this.logger = this.container.lookup('logger:main');
+    super(Object.assign(options, { container: new Container() }));
+
+    // Setup some helpful container shortcuts
+    this.container.register('app:main', this);
+    this.router = this.container.lookup('app:router');
+    this.logger = this.container.lookup('app:logger');
+
+    // Find addons for this application
     this.addons = this.buildAddons(options.addons || []);
+
     // Generate config first, since the loading process may need it
     this.config = this.generateConfig();
 
-    this.addons.forEach((addon) => {
-      addon.load();
-    });
-    this.load();
     this.compileRouter();
   }
 
@@ -122,7 +130,6 @@ export default class Application extends Addon {
       let addon = new AddonClass({
         environment: this.environment,
         container: this.container,
-        logger: this.logger,
         dir: plugin.dir,
         pkg: plugin.pkg
       });
@@ -147,11 +154,15 @@ export default class Application extends Addon {
    */
   private generateConfig(): any {
     dotenv.config();
-    let config = this._config(this.environment);
+    let appConfig = this.resolver.retrieve('config:environment') || constant({});
+    let config = appConfig(this.environment);
     config.environment = this.environment;
     this.container.register('config:environment', config);
     this.addons.forEach((addon) => {
-      addon._config(this.environment, config);
+      let addonConfig = addon.resolver.retrieve('config:environment');
+      if (addonConfig) {
+        addonConfig(this.environment, config);
+      }
     });
     return config;
   }
@@ -160,13 +171,21 @@ export default class Application extends Addon {
    * Assemble middleware and routes
    */
   private compileRouter(): void {
+    // Load addon middleware first
     this.addons.forEach((addon) => {
-      addon._middleware(this.router, this);
+      let addonMiddleware = addon.resolver.retrieve('config:middleware') || noop;
+      addonMiddleware(this.router, this);
     });
-    this._middleware(this.router, this);
-    this._routes(this.router);
+    // Then load app middleware
+    let appMiddleware = this.resolver.retrieve('config:middleware') || noop;
+    appMiddleware(this.router, this);
+    // Load app routes first so they have precedence
+    let appRoutes = this.resolver.retrieve('config:routes') || noop;
+    appRoutes(this.router, this);
+    // Load addon routes in reverse order so routing precedence matches addon load order
     this.addons.reverse().forEach((addon) => {
-      addon._routes(this.router);
+      let addonRoutes = addon.resolver.retrieve('config:routes') || noop;
+      addonRoutes(this.router);
     });
   }
 
@@ -213,7 +232,7 @@ export default class Application extends Addon {
    * @since 0.1.0
    */
   public async runInitializers(): Promise<void> {
-    let initializers = <Initializer[]>topsort(values(this.container.lookupAll('initializer')));
+    let initializers = <Initializer[]>topsort(<Vertex[]>values(this.container.lookupAll('initializer')));
     await each(initializers, async (initializer: Initializer) => {
       await initializer.initialize(this);
     });
