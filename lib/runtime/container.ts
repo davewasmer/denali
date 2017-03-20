@@ -1,40 +1,33 @@
 import {
-  findKey,
-  upperFirst,
   camelCase,
-  keys,
-  merge
+  forOwn,
+  isObject,
+  forEach,
+  defaults
 } from 'lodash';
+import * as dedent from 'dedent-js';
+import { Dict } from '../utils/types';
 import DenaliObject from '../metal/object';
-import Logger from './logger';
-import Model from '../data/model';
-import Serializer from '../data/serializer';
-import OrmAdapter from '../data/orm-adapter';
-import Service from './service';
+import Resolver from './resolver';
+import { assign, mapValues } from 'lodash';
 
-interface ParsedName {
+export interface ParsedName {
   fullName: string;
   type: string;
   modulePath: string;
   moduleName: string;
 }
 
-interface FallbackGetter {
-  (): string;
-}
-
-interface LookupOptions {
+export interface ContainerOptions {
   containerize?: boolean;
   singleton?: boolean;
-  fallback?: string | FallbackGetter;
-  original?: ParsedName;
 }
 
-interface ModuleRegistry {
-  [moduleName: string]: any;
+const DEFAULT_CONTAINER_OPTIONS = {
+  containerize: true,
+  singleton: true
 }
 
-type Constructor<T> = new(...args: any[]) => T;
 
 /**
  * The Container houses all the various classes that makeup a Denali app's
@@ -48,32 +41,43 @@ type Constructor<T> = new(...args: any[]) => T;
  */
 export default class Container extends DenaliObject {
 
-  /**
-   * An internal cache of lookups and their resolved values
-   */
-  private _cache: ModuleRegistry = {};
-
-  /**
-   * The internal cache of available references
-   */
-  private _registry: ModuleRegistry = {};
-
-  /**
-   * A reference to the application config
-   *
-   * @since 0.1.0
-   */
-  public get config(): any {
-    return this.lookup('config:environment');
+  constructor(options: { resolver?: Resolver } = {}) {
+    super();
+    this.resolvers.push(options.resolver || new Resolver(process.cwd()));
+    this.registerOptions('action', { singleton: false });
   }
 
   /**
-   * A reference to the application logger
+   * An internal cache of lookups and their resolved values
+   */
+  private lookups: Map<string, any> = new Map();
+
+  /**
+   * Options for entries in this container. Keyed on the parsedName.fullName, each entry supplies
+   * metadata for how the container entry should be treated.
+   */
+  private options: Map<string, ContainerOptions> = new Map();
+
+  /**
+   * Optional resolvers to use as a fallback if the default resolver is unable to resolve a lookup.
+   * Usually these are the resolvers for child addons, but you could also use a fallback resolver
+   * to support an alternative directory structure for your app. NOTE: this is NOT recommended, and
+   * may break compatibility with poorly designed addons as well as certainly CLI features.
+   */
+  private resolvers: Resolver[] = [];
+
+  /**
+   * Holds options for how to handle constructing member objects
+   */
+  private memberOptions: Map<string, ContainerOptions> = new Map();
+
+  /**
+   * Add a fallback resolver to the bottom of the fallback queue.
    *
    * @since 0.1.0
    */
-  public get logger(): Logger {
-    return this.lookup('logger:main');
+  public addResolver(resolver: Resolver) {
+    this.resolvers.push(resolver);
   }
 
   /**
@@ -81,9 +85,34 @@ export default class Container extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public register(name: string, value: any): void {
-    let parsedName = this.parseName(name);
-    this._registry[parsedName.fullName] = value;
+  public register(name: string, value: any, options?: ContainerOptions): void {
+    this.resolvers[0].register(name, value);
+    if (options) {
+      this.registerOptions(name, options);
+    }
+  }
+
+  /**
+   * Set options for how the given member will be constructed. Options passed in are merged with any
+   * existing options - they do not replace them entirely.
+   *
+   * @since 0.1.0
+   */
+  public registerOptions(name: string, options: ContainerOptions = {}): void {
+    let { fullName } = parseName(name);
+    let currentOptions = this.memberOptions.get(fullName);
+    this.memberOptions.set(fullName, assign(currentOptions, options));
+  }
+
+  /**
+   * Get the given option for the given member of the container
+   *
+   * @since 0.1.0
+   */
+  public optionFor(name: string, option: keyof ContainerOptions): any {
+    let { fullName } = parseName(name);
+    let options = this.memberOptions.get(fullName) || {};
+    return defaults(options, DEFAULT_CONTAINER_OPTIONS)[option];
   }
 
   /**
@@ -91,114 +120,99 @@ export default class Container extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public lookup(name: string): any {
-    let parsedName = this.parseName(name);
-    let lookupMethod = this[`lookup${ upperFirst(camelCase(parsedName.type)) }`] || this._lookupOther;
-    return lookupMethod.call(this, parsedName);
-  }
+  public lookup(name: string, lookupOptions: { loose?: boolean, raw?: boolean } = {}): any {
+    let parsedName = parseName(name);
 
-  [key: string]: any;
+    if (!this.lookups.has(parsedName.fullName)) {
+
+      // Find the member with the top level resolver
+      let object;
+      forEach(this.resolvers, (resolver) => {
+        object = resolver.retrieve(parsedName);
+        return !object; // Break loop if we found something
+      });
+
+      // Handle a bad lookup
+      if (!object) {
+        // Allow failed lookups (opt-in)
+        if (lookupOptions.loose) {
+          this.lookups.set(parsedName.fullName, null);
+          return null;
+        }
+        throw new Error(dedent`
+          No such ${ parsedName.type } found: '${ parsedName.moduleName }'
+          Available "${ parsedName.type }" container entries:
+          ${ Object.keys(this.lookupAll(parsedName.type)) }
+        `);
+      }
+
+      // Create a clone of the object so that we won't share a reference with other containers.
+      // This is important for tests especially - since our test runner (ava) runs tests from the
+      // same file concurrently, each test's container would end up using the same underlying
+      // object (since Node's require caches modules), so mutations to the object in one test would
+      // change it for all others. So we need to clone the object so our container gets a unique
+      // in-memory object to work with.
+      object = this.createLocalClone(object);
+
+      // Inject container references
+      if (this.optionFor(parsedName.fullName, 'containerize')) {
+        object.container = this;
+        if (object.prototype) {
+          object.prototype.container = this;
+        }
+      }
+
+      if (this.optionFor(parsedName.fullName, 'singleton')) {
+        object = new object();
+      }
+
+      this.lookups.set(parsedName.fullName, object);
+    }
+
+    return this.lookups.get(parsedName.fullName);
+  }
 
   /**
    * Lookup all modules of a specific type in the container. Returns an object of all the modules
    * keyed by their module path (i.e. `role:employees/manager` would be found under
    * `lookupAll('role')['employees/manager']`
-   *
-   * @since 0.1.0
    */
-  public lookupAll(type: string): { [moduleName: string]: any } {
-    return keys(this._registry).filter((fullName) => {
-      return this.parseName(fullName).type === type;
-    }).reduce((typeMap: ModuleRegistry, fullName) => {
-      typeMap[this.parseName(fullName).modulePath] = this.lookup(fullName);
-      return typeMap;
-    }, {});
-  }
-
-  /**
-   * The base lookup method that most other lookup methods delegate to. Attempts to lookup a cached
-   * resolution for the parsedName provided. If none is found, performs the lookup and caches it
-   * for future retrieval
-   */
-  private _lookupOther(parsedName: ParsedName, options: LookupOptions = { containerize: false, singleton: false }) {
-    // Cache all this containerization / singleton instantiation, etc
-    if (!this._cache[parsedName.fullName]) {
-      let Class = this._registry[parsedName.fullName];
-
-      // If lookup succeeded, handle any first-time lookup chores
-      if (Class) {
-        if (Class.containerize || options.containerize) {
-          Class.container = this;
-          Class.prototype.container = this;
-        }
-        if (Class.singleton || options.singleton) {
-          Class = new Class();
-        }
-
-      // If the lookup failed, allow for a fallback
-      } else if (options.fallback) {
-        let fallback = result(options.fallback);
-        let fallbackOptions = merge(options, {
-          fallback: null,
-          original: parsedName
-        });
-        Class = this._lookupOther(this.parseName(fallback), fallbackOptions);
-
-      // If the lookup and fallback failed, bail
-      } else {
-        let message = `No such ${ parsedName.type } found: '${ parsedName.moduleName }'`;
-        if (options.original) {
-          message += `. Fallback lookup '${ options.original.fullName }' was also not found.`;
-        }
-        message += `\nAvailable "${ parsedName.type }" container entries:\n`;
-        message += Object.keys(this.lookupAll(parsedName.type));
-        throw new Error(message);
-      }
-
-      // Update the cache with either the successful lookup, or the fallback
-      this._cache[parsedName.fullName] = Class;
-    }
-    return this._cache[parsedName.fullName];
-  }
-
-  /**
-   * Lookup an ORM adapter. If not found, falls back to the application ORM adapter as determined
-   * by the `ormAdapter` config property.
-   */
-  private lookupOrmAdapter(parsedName: ParsedName): OrmAdapter {
-    return this._lookupOther(parsedName, {
-      fallback: () => {
-        if (!this.config.ormAdapter) {
-          throw new Error('No default ORM adapter was defined in supplied in config.ormAdapter!');
-        }
-        return `orm-adapter:${ this.config.ormAdapter }`;
-      }
+  public lookupAll(type: string): { [modulePath: string]: any } {
+    let resolverResultsets = this.resolvers.map((resolver) => {
+      return resolver.retrieveAll(type);
+    });
+    let mergedResultset = <{ [modulePath: string]: any }>(<any>assign)(...resolverResultsets.reverse());
+    return mapValues(mergedResultset, (rawResolvedObject, modulePath) => {
+      return this.lookup(`${ type }:${ modulePath }`);
     });
   }
 
   /**
-   * Lookup a serializer. Falls back to the application serializer if not found.
+   * Create a local clone of a container entry, which is what will be cached / handed back to the
+   * consuming application. This avoids any cross-contamination between multiple containers due to
+   * Node require's caching behavior.
    */
-  private lookupSerializer(parsedName: ParsedName): Serializer {
-    return this._lookupOther(parsedName, {
-      fallback: 'serializer:application'
-    });
-  }
-
-  /**
-   * Take the supplied name which can come in several forms, and normalize it.
-   */
-  private parseName(name: string): ParsedName {
-    let [ type, modulePath ] = name.split(':');
-    if (modulePath === undefined || modulePath === 'undefined') {
-      throw new Error(`You tried to look up a ${ type } called undefined - did you pass in a variable that doesn't have the expected value?`);
+  private createLocalClone(object: any) {
+    // For most types in JavaScript, cloning is simple. But functions are weird - you can't simply
+    // clone them, since the clone would not be callable. You need to create a wrapper function that
+    // invokes the original. Plus, in case the function is actually a class constructor, you need to
+    // clone the prototype as well. One shortcoming here is that the produced function doesn't have
+    // the correct arity.
+    if (typeof object === 'function') {
+      let original = object;
+      function Containerized() {
+        return original.apply(this, arguments);
+      }
+      Containerized.prototype = Object.assign(Object.create(Object.getPrototypeOf(original.prototype)), original.prototype);
+      return Containerized;
+    // Just return primitive values - passing through the function effectively clones them
+    } else if (!isObject(object)) {
+      return object;
+    // For objects, create a new object that shares our source object's prototype. Then copy over
+    // all the owned properties. From the outside, the result should be an identical object.
+    } else {
+      return Object.assign(Object.create(Object.getPrototypeOf(object)), object);
     }
-    return {
-      fullName: name,
-      type,
-      modulePath,
-      moduleName: camelCase(modulePath)
-    };
   }
 
   /**
@@ -207,21 +221,22 @@ export default class Container extends DenaliObject {
    * when a lookup of that type fails).
    */
   availableForType(type: string): string[] {
-    return Object.keys(this._registry).filter((key) => {
-      return key.split(':')[0] === type;
-    }).map((key) => {
-      return key.split(':')[1];
-    });
+    return this.lookupAll(type).keys();
   }
 }
 
-
 /**
- * If the value is a function, execute it and return the value, otherwise, return the value itself.
+ * Take the supplied name which can come in several forms, and normalize it.
  */
-function result(value: any): any {
-  if (typeof value === 'function') {
-    return value();
+export function parseName(name: string): ParsedName {
+  let [ type, modulePath ] = name.split(':');
+  if (modulePath === undefined || modulePath === 'undefined') {
+    throw new Error(`You tried to look up a ${ type } called undefined - did you pass in a variable that doesn't have the expected value?`);
   }
-  return value;
+  return {
+    fullName: name,
+    type,
+    modulePath,
+    moduleName: camelCase(modulePath)
+  };
 }

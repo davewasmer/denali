@@ -5,10 +5,8 @@ import { Logger, Addon, Container, Service } from 'denali';
 test('Addon > #loadApp > Singletons are instantiated', async (t) => {
   let dir = path.join(__dirname, '..', 'fixtures', 'addon');
   let container = new Container();
-  let logger = new Logger();
   let addon = new Addon({
     environment: 'development',
-    logger,
     container,
     dir
   });
