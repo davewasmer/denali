@@ -61,6 +61,20 @@ export default class Request extends DenaliObject {
   public params: any;
 
   /**
+   * baseUrl of the app, needed to simulate Express request api
+   *
+   * @since 0.1.0
+   */
+  public baseUrl = '/';
+
+  /**
+   * Url of the request -> can be modified
+   *
+   * @since 0.1.0
+   */
+  public url: string;
+
+  /**
    * The incoming request body, buffered and parsed by the serializer (if applicable)
    *
    * @since 0.1.0
@@ -82,6 +96,7 @@ export default class Request extends DenaliObject {
     super();
     this._incomingMessage = incomingMessage;
     this.parsedUrl = url.parse(incomingMessage.url, true);
+    this.url = this.parsedUrl.pathname;
     this.id = uuid.v4();
   }
 
@@ -114,6 +129,20 @@ export default class Request extends DenaliObject {
   }
 
   /**
+   * The original path, without any modifications by middleware
+   * or the router.
+   *
+   * TODO: when denali supports mounting on a subpath, this should
+   *       be updated to reflect the full path, and the path variable
+   *       in this class will be the path *after* the subpath
+   *
+   * @since 0.1.0
+   */
+  public get originalUrl(): string {
+    return this.parsedUrl.pathname;
+  }
+
+  /**
    * The path extracted from the URL of the incoming request.
    *
    * @since 0.1.0
@@ -123,12 +152,39 @@ export default class Request extends DenaliObject {
   }
 
   /**
+   * The protocol extracted from the URL of the incoming request
+   *
+   * @since 0.1.0
+   */
+  public get protocol(): string {
+    return this.parsedUrl.protocol.toLowerCase();
+  }
+
+  /**
    * The query params supplied with the request URL, parsed into an object
    *
    * @since 0.1.0
    */
   public get query(): { [key: string]: string } {
     return this.parsedUrl.query;
+  }
+
+  /**
+   * Whether or not this request was made over https
+   *
+   * @since 0.1.0
+   */
+  public get secure(): boolean {
+    return this.protocol === 'https';
+  }
+
+  /**
+   * Whether or not this request was made by a client library
+   *
+   * @since 0.1.0
+   */
+  public get xhr(): boolean {
+    return this.get('x-requested-with') === 'XMLHttpRequest';
   }
 
   /**

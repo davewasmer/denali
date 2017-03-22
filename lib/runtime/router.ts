@@ -132,7 +132,7 @@ export default class Router extends DenaliObject implements RouterDSL {
     try {
 
       debug(`[${ request.id }]: ${ request.method.toUpperCase() } ${ request.path }`);
-      await fromNode((cb) => this.middleware.run(req, res, cb));
+      await fromNode((cb) => this.middleware.run(request, res, cb));
 
       debug(`[${ request.id }]: routing request`);
       let routes = this.routes[request.method];
@@ -261,7 +261,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    * will be used to fill in the dynamic segements of the action's route (if
    * any).
    */
-  urlFor(action: string | Action, data: any): string | boolean {
+  public urlFor(action: string | Action, data: any): string | boolean {
     if (typeof action === 'string') {
       action = this.container.lookup(`action:${ action }`);
     }
