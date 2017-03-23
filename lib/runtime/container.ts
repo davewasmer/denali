@@ -6,7 +6,7 @@ import {
   defaults
 } from 'lodash';
 import * as dedent from 'dedent-js';
-import { Dict } from '../utils/types';
+import { Dict, Constructor } from '../utils/types';
 import DenaliObject from '../metal/object';
 import Resolver from './resolver';
 import { assign, mapValues } from 'lodash';
@@ -194,17 +194,22 @@ export default class Container extends DenaliObject {
    */
   private createLocalClone(object: any) {
     // For most types in JavaScript, cloning is simple. But functions are weird - you can't simply
-    // clone them, since the clone would not be callable. You need to create a wrapper function that
-    // invokes the original. Plus, in case the function is actually a class constructor, you need to
-    // clone the prototype as well. One shortcoming here is that the produced function doesn't have
-    // the correct arity.
+    // clone them via Object.create(function), since the clone would not be callable.
     if (typeof object === 'function') {
-      let original = object;
-      function Containerized() {
-        return original.apply(this, arguments);
+      if (object.toString().startsWith('class')) {
+        return class Containerized extends (<Constructor<{}>>object) {}
+      // You need to create a wrapper function that
+      // invokes the original. Plus, in case the function is actually a class constructor, you need to
+      // clone the prototype as well. One shortcoming here is that the produced function doesn't have
+      // the correct arity.
+      } else {
+        let original = object;
+        function Containerized() {
+          return original.apply(this, arguments);
+        }
+        Containerized.prototype = Object.assign(Object.create(Object.getPrototypeOf(original.prototype)), original.prototype);
+        return Containerized;
       }
-      Containerized.prototype = Object.assign(Object.create(Object.getPrototypeOf(original.prototype)), original.prototype);
-      return Containerized;
     // Just return primitive values - passing through the function effectively clones them
     } else if (!isObject(object)) {
       return object;
