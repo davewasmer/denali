@@ -28,7 +28,6 @@ export interface ApplicationOptions {
   container?: Container;
   environment: string;
   dir: string;
-  logger?: Logger;
   pkg?: any;
 }
 

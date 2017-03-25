@@ -94,20 +94,9 @@ export default class Router extends DenaliObject implements RouterDSL {
   private middleware: any = (<() => any>ware)();
 
   /**
-   * The application logger instance
-   */
-  private logger: Logger;
-
-  /**
    * The application container
    */
   public container: Container;
-
-  constructor(options: { container: Container, logger: Logger }) {
-    super();
-    this.container = options.container;
-    this.logger = options.logger;
-  }
 
   /**
    * Helper method to invoke the function exported by `config/routes.js` in the context of the
@@ -149,7 +138,6 @@ export default class Router extends DenaliObject implements RouterDSL {
 
       let action: Action = new (<any>request.route.action)({
         request,
-        logger: this.logger,
         container: this.container
       });
 
@@ -207,7 +195,6 @@ export default class Router extends DenaliObject implements RouterDSL {
     let errorAction = new ErrorAction({
       request,
       response: res,
-      logger: this.logger,
       container: this.container
     });
     return errorAction.run();

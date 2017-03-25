@@ -137,13 +137,6 @@ abstract class Action extends DenaliObject {
   public serializer: string | boolean = null;
 
   /**
-   * The application config
-   *
-   * @since 0.1.0
-   */
-  public config: any;
-
-  /**
    * The incoming Request that this Action is responding to.
    *
    * @since 0.1.0
@@ -172,7 +165,6 @@ abstract class Action extends DenaliObject {
     this.request = options.request;
     this.logger = options.logger;
     this.container = options.container;
-    this.config = this.container.lookup('app:main').config;
   }
 
   /**
