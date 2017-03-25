@@ -93,17 +93,19 @@ export default class Application extends Addon {
   public addons: Addon[];
 
   constructor(options: ApplicationOptions) {
-    super(Object.assign(options, { container: new Container() }));
+    let container = new Container(options.dir);
+    super(Object.assign(options, { container }));
 
     this.drainers = [];
 
     // Setup some helpful container shortcuts
     this.container.register('app:main', this);
-    this.router = this.container.lookup('app:router');
-    this.logger = this.container.lookup('app:logger');
 
     // Find addons for this application
     this.addons = this.buildAddons(options.addons || []);
+
+    this.router = this.container.lookup('app:router');
+    this.logger = this.container.lookup('app:logger');
 
     // Generate config first, since the loading process may need it
     this.config = this.generateConfig();
