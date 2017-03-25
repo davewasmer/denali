@@ -14,7 +14,7 @@ test('Router > runs middleware before determining routing', async (t) => {
   t.plan(2);
   let count = 0;
   let container = new Container();
-  let logger = new Logger();
+  container.register('app:router', Router);
   container.register('config:environment', { environment: 'development' });
   container.register('action:error', class TestAction extends Action {
     respond() {
@@ -22,7 +22,7 @@ test('Router > runs middleware before determining routing', async (t) => {
       t.is(count, 2);
     }
   });
-  let router = new Router({ container, logger });
+  let router = container.lookup('app:router');
   router.use((req, res, next) => {
     count += 1;
     t.is(count, 1);
@@ -34,7 +34,7 @@ test('Router > runs middleware before determining routing', async (t) => {
 test('Router > does not attempt to serialize when action.serializer = false', async (t) => {
   t.plan(1);
   let container = new Container();
-  let logger = new Logger();
+  container.register('app:router', Router);
   container.register('config:environment', { environment: 'development' });
   container.register('action:error', class TestAction extends Action {
     serializer: false = false;
@@ -56,7 +56,7 @@ test('Router > does not attempt to serialize when action.serializer = false', as
       t.fail('Router should not have attempted to serialize this response with a serializer');
     }
   });
-  let router = new Router({ container, logger });
+  let router = container.lookup('app:router');
   router.post('/', 'index');
 
   let req = new MockRequest({ url: '/', method: 'POST' });
@@ -66,8 +66,8 @@ test('Router > does not attempt to serialize when action.serializer = false', as
 
 test('Router > #urlFor works with string argument', (t) => {
   let container = new Container();
-  let logger = new Logger();
 
+  container.register('app:router', Router);
   container.register('action:index', class TestAction extends Action {
     serializer = false;
     respond() {
@@ -75,7 +75,7 @@ test('Router > #urlFor works with string argument', (t) => {
     }
   });
 
-  let router = new Router({ container, logger });
+  let router = container.lookup('app:router');
   router.get('/test/:id/', 'index');
 
   t.is(router.urlFor('index', {id: 10}), '/test/10/', 'Router should return the correctly reversed url');
@@ -83,8 +83,8 @@ test('Router > #urlFor works with string argument', (t) => {
 
 test('Router > #urlFor works with action argument', (t) => {
   let container = new Container();
-  let logger = new Logger();
 
+  container.register('app:router', Router);
   container.register('action:index', class TestAction extends Action {
     serializer = false;
     respond() {
@@ -92,7 +92,7 @@ test('Router > #urlFor works with action argument', (t) => {
     }
   });
 
-  let router = new Router({ container, logger });
+  let router = container.lookup('app:router');
   router.get('/test/:id/', 'index');
 
   let TestAction = container.lookup('action:index');

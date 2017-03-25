@@ -16,13 +16,13 @@ test('Container > #lookup(type) > looks up a module', async (t) => {
 
 test('Container > #lookupAll(type) > returns an object with all the modules of the given type', async (t) => {
   let container = new Container();
-  container.register('foo:bar', { buzz: true });
-  container.register('foo:buzz', { bat: true });
-  let type = (<any> container.lookupAll('foo'));
+  container.register('foo:bar', { isBar: true });
+  container.register('foo:buzz', { isBuzz: true });
+  let type = container.lookupAll('foo');
   t.truthy(type.bar);
-  t.true(type.bar.buzz);
+  t.true(type.bar.isBar);
   t.truthy(type.buzz);
-  t.true(type.buzz.bat);
+  t.true(type.buzz.isBuzz);
 });
 
 test('Container > singletons > should instantiate a singleton', async (t) => {
@@ -30,7 +30,8 @@ test('Container > singletons > should instantiate a singleton', async (t) => {
   class Class {
     static singleton = true;
   }
-  container.register('foo:bar', new Class());
+  container.registerOptions('foo', { singleton: true });
+  container.register('foo:bar', Class);
 
   let classInstance = container.lookup('foo:bar');
   let classInstanceTwo = container.lookup('foo:bar');
