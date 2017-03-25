@@ -9,8 +9,7 @@ import Route from './route';
 import Request, { Method } from './request';
 import ensureArray = require('arrify');
 import DenaliObject from '../metal/object';
-import Logger from './logger';
-import Container from './container';
+import Container from '../metal/container';
 import Action from './action';
 import Serializer from '../data/serializer';
 import {

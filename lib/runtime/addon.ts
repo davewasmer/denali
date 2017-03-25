@@ -15,11 +15,11 @@ import * as stripExtension from 'strip-extension';
 import { singularize } from 'inflection';
 import * as createDebug from 'debug';
 import DenaliObject from '../metal/object';
-import Container from './container';
+import Container from '../metal/container';
 import Logger from './logger';
 import Router from './router';
 import Application from './application';
-import Resolver from './resolver';
+import Resolver from '../metal/resolver';
 
 const debug = createDebug('denali:runtime:addon');
 

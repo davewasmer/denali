@@ -9,7 +9,7 @@ import * as Bluebird from 'bluebird';
 import DenaliObject from '../metal/object';
 import ORMAdapter from './orm-adapter';
 import Service from '../runtime/service';
-import Container from '../runtime/container';
+import Container from '../metal/container';
 import { RelationshipDescriptor } from './descriptors';
 
 const debug = createDebug('denali:model');

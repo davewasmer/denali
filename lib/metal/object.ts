@@ -1,5 +1,5 @@
 import mixin, { MixinApplicator } from './mixin';
-import Container from '../runtime/container';
+import Container from './container';
 
 /**
  * The base object class for Denali classes. Adds mixin support.

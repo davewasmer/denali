@@ -11,7 +11,7 @@ import Addon, { AddonOptions } from './addon';
 import topsort from '../utils/topsort';
 import Router from './router';
 import Logger from './logger';
-import Container from './container';
+import Container from '../metal/container';
 import findPlugins from 'find-plugins';
 import * as tryRequire from 'try-require';
 import * as createDebug from 'debug';

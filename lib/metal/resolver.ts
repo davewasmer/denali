@@ -4,8 +4,10 @@ import {
   omitBy
 } from 'lodash';
 import * as path from 'path';
+import * as fs from 'fs';
 import { parseName, ParsedName, ContainerOptions } from './container';
 import * as tryRequire from 'try-require';
+import { pluralize } from 'inflection';
 import requireDir from '../utils/require-dir';
 
 interface RetrieveMethod {
@@ -56,7 +58,7 @@ export default class Resolver {
     if (this.registry.has(parsedName.fullName)) {
       return this.registry.get(parsedName.fullName);
     }
-    let retrieveMethod = <RetrieveMethod>this[`retrieve${ camelCase(upperFirst(parsedName.type)) }`];
+    let retrieveMethod = <RetrieveMethod>this[`retrieve${ upperFirst(camelCase(parsedName.type)) }`];
     if (!retrieveMethod) {
       retrieveMethod = this.retrieveOther;
     }
@@ -68,7 +70,7 @@ export default class Resolver {
    * Unknown types are assumed to exist underneath the `app/` folder
    */
   protected retrieveOther(parsedName: ParsedName) {
-    return tryRequire(path.join(this.root, 'app', parsedName.type, parsedName.modulePath));
+    return tryRequire(path.join(this.root, 'app', pluralize(parsedName.type), parsedName.modulePath));
   }
 
   /**
@@ -98,12 +100,13 @@ export default class Resolver {
    */
   public retrieveAll(type: string) {
     let manualRegistrations: { [modulePath: string]: any } = {};
-    this.registry.forEach((entry, modulePath) => {
-      if (parseName(modulePath).type === type) {
-        manualRegistrations[modulePath] = entry;
+    this.registry.forEach((entry, fullName) => {
+      let parsedName = parseName(fullName);
+      if (parsedName.type === type) {
+        manualRegistrations[parsedName.modulePath] = entry;
       }
     });
-    let retrieveMethod = <RetrieveAllMethod>this[`retrieve${ camelCase(upperFirst(type)) }`];
+    let retrieveMethod = <RetrieveAllMethod>this[`retrieveAll${ upperFirst(camelCase(type)) }`];
     if (!retrieveMethod) {
       retrieveMethod = this.retrieveAllOther;
     }
@@ -115,30 +118,46 @@ export default class Resolver {
    * Unknown types are assumed to exist in the `app/` folder
    */
   protected retrieveAllOther(type: string) {
-    return requireDir(path.join(this.root, 'app', type));
+    let typeDir = path.join(this.root, 'app', pluralize(type));
+    if (fs.existsSync(typeDir)) {
+      return requireDir(typeDir);
+    }
+    return {};
   }
 
   /**
    * App files are found in `app/*`
    */
   protected retrieveAllApp(parsedName: ParsedName) {
-    return requireDir(path.join(this.root, 'app'), { recurse: false });
+    let appDir = path.join(this.root, 'app');
+    if (fs.existsSync(appDir)) {
+      return requireDir(appDir, { recurse: false });
+    }
+    return {};
   }
 
   /**
    * Config files are found in the `config/` folder. Initializers are _not_ included in this group
    */
   protected retrieveAllConfig(type: string) {
-    return omitBy(requireDir(path.join(this.root, 'config')), (mod, modulePath) => {
-      return modulePath.startsWith('initializers');
-    });
+    let configDir = path.join(this.root, 'config');
+    if (fs.existsSync(configDir)) {
+      return omitBy(requireDir(configDir), (mod, modulePath) => {
+        return modulePath.startsWith('initializers');
+      });
+    }
+    return {};
   }
 
   /**
    * Initializers files are found in the `config/initializers/` folder
    */
   protected retrieveAllInitializer(type: string) {
-    return requireDir(path.join(this.root, 'config', 'initializers'));
+    let initializersDir = path.join(this.root, 'config', 'initializers');
+    if (fs.existsSync(initializersDir)) {
+      return requireDir(initializersDir);
+    }
+    return {};
   }
 
 }

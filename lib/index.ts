@@ -21,12 +21,13 @@ import JSONAPISerializer from './data/serializers/json-api';
 import Instrumentation from './metal/instrumentation';
 import mixin, { createMixin, MixinFactory, MixinApplicator } from './metal/mixin';
 import eachPrototype from './metal/each-prototype';
+import Container from './metal/container';
+import Resolver from './metal/resolver';
 
 // Runtime
 import Action from './runtime/action';
 import Addon from './runtime/addon';
 import Application from './runtime/application';
-import Container from './runtime/container';
 import Errors from './runtime/errors';
 import Logger from './runtime/logger';
 import Request from './runtime/request';
@@ -60,12 +61,13 @@ export {
   MixinFactory,
   MixinApplicator,
   eachPrototype,
+  Container,
+  Resolver,
 
   // Runtime
   Action,
   Addon,
   Application,
-  Container,
   Errors,
   Logger,
   Request,

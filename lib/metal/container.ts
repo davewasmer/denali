@@ -3,13 +3,15 @@ import {
   forOwn,
   isObject,
   forEach,
-  defaults
+  defaults,
+  forIn
 } from 'lodash';
 import * as dedent from 'dedent-js';
 import { Dict, Constructor } from '../utils/types';
-import DenaliObject from '../metal/object';
+import DenaliObject from './object';
 import Resolver from './resolver';
 import { assign, mapValues } from 'lodash';
+import { IS_INJECTION } from './inject';
 
 export interface ParsedName {
   fullName: string;
@@ -25,7 +27,7 @@ export interface ContainerOptions {
 
 const DEFAULT_CONTAINER_OPTIONS = {
   containerize: true,
-  singleton: true
+  singleton: false
 }
 
 
@@ -41,22 +43,15 @@ const DEFAULT_CONTAINER_OPTIONS = {
  */
 export default class Container extends DenaliObject {
 
-  constructor(options: { resolver?: Resolver } = {}) {
+  constructor(root: string | Resolver = process.cwd()) {
     super();
-    this.resolvers.push(options.resolver || new Resolver(process.cwd()));
-    this.registerOptions('action', { singleton: false });
+    this.resolvers.push(typeof root === 'string' ? new Resolver(root) : root);
   }
 
   /**
    * An internal cache of lookups and their resolved values
    */
   private lookups: Map<string, any> = new Map();
-
-  /**
-   * Options for entries in this container. Keyed on the parsedName.fullName, each entry supplies
-   * metadata for how the container entry should be treated.
-   */
-  private options: Map<string, ContainerOptions> = new Map();
 
   /**
    * Optional resolvers to use as a fallback if the default resolver is unable to resolve a lookup.
@@ -69,7 +64,12 @@ export default class Container extends DenaliObject {
   /**
    * Holds options for how to handle constructing member objects
    */
-  private memberOptions: Map<string, ContainerOptions> = new Map();
+  private memberOptions: Map<string, ContainerOptions> = new Map([
+    [ 'app', { singleton: true } ],
+    [ 'orm-adapter', { singleton: true } ],
+    [ 'serializer', { singleton: true } ],
+    [ 'service', { singleton: true } ]
+  ]);
 
   /**
    * Add a fallback resolver to the bottom of the fallback queue.
@@ -109,10 +109,15 @@ export default class Container extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public optionFor(name: string, option: keyof ContainerOptions): any {
-    let { fullName } = parseName(name);
-    let options = this.memberOptions.get(fullName) || {};
-    return defaults(options, DEFAULT_CONTAINER_OPTIONS)[option];
+  public optionFor(name: string, option?: keyof ContainerOptions): any {
+    let { type, fullName } = parseName(name);
+    let options = this.memberOptions.get(fullName);
+    let typeOptions = this.memberOptions.get(type);
+    let combinedOptions = defaults(defaults(options, typeOptions), DEFAULT_CONTAINER_OPTIONS);
+    if (!option) {
+      return combinedOptions;
+    }
+    return combinedOptions[option];
   }
 
   /**
@@ -126,7 +131,7 @@ export default class Container extends DenaliObject {
     if (!this.lookups.has(parsedName.fullName)) {
 
       // Find the member with the top level resolver
-      let object;
+      let object: any;
       forEach(this.resolvers, (resolver) => {
         object = resolver.retrieve(parsedName);
         return !object; // Break loop if we found something
@@ -139,20 +144,13 @@ export default class Container extends DenaliObject {
           this.lookups.set(parsedName.fullName, null);
           return null;
         }
-        throw new Error(dedent`
-          No such ${ parsedName.type } found: '${ parsedName.moduleName }'
-          Available "${ parsedName.type }" container entries:
-          ${ Object.keys(this.lookupAll(parsedName.type)) }
-        `);
+        throw new Error(`No such ${ parsedName.type } found: '${ parsedName.moduleName }'`);
       }
 
-      // Create a clone of the object so that we won't share a reference with other containers.
-      // This is important for tests especially - since our test runner (ava) runs tests from the
-      // same file concurrently, each test's container would end up using the same underlying
-      // object (since Node's require caches modules), so mutations to the object in one test would
-      // change it for all others. So we need to clone the object so our container gets a unique
-      // in-memory object to work with.
-      object = this.createLocalClone(object);
+      // Make the singleton if needed
+      if (this.optionFor(parsedName.fullName, 'singleton')) {
+        object = new object();
+      }
 
       // Inject container references
       if (this.optionFor(parsedName.fullName, 'containerize')) {
@@ -162,14 +160,33 @@ export default class Container extends DenaliObject {
         }
       }
 
-      if (this.optionFor(parsedName.fullName, 'singleton')) {
-        object = new object();
+      // Inject other references
+      this.applyInjections(object);
+      if (object.prototype) {
+        this.applyInjections(object.prototype);
+      }
+
+      // Freeze the actual containered value to avoid allowing mutations. If `object` here is the
+      // direct result of a require() call, then any mutations to it will be shared with other
+      // containers that require() it (i.e. when running concurrent tests). If it's a singleton,
+      // this isn't necessary since each container gets it's own instance. But if it's not, then we
+      // freeze it to prevent mutations which can lead to extremely difficult to trace bugs.
+      if (!this.optionFor(parsedName.fullName, 'singleton')) {
+        object = Object.freeze(object);
       }
 
       this.lookups.set(parsedName.fullName, object);
     }
 
     return this.lookups.get(parsedName.fullName);
+  }
+
+  private applyInjections(object: any) {
+    forIn(object, (value, key) => {
+      if (value && value[IS_INJECTION]) {
+        object[key] = this.lookup(value.lookup);
+      }
+    });
   }
 
   /**
@@ -188,45 +205,12 @@ export default class Container extends DenaliObject {
   }
 
   /**
-   * Create a local clone of a container entry, which is what will be cached / handed back to the
-   * consuming application. This avoids any cross-contamination between multiple containers due to
-   * Node require's caching behavior.
-   */
-  private createLocalClone(object: any) {
-    // For most types in JavaScript, cloning is simple. But functions are weird - you can't simply
-    // clone them via Object.create(function), since the clone would not be callable.
-    if (typeof object === 'function') {
-      if (object.toString().startsWith('class')) {
-        return class Containerized extends (<Constructor<{}>>object) {}
-      // You need to create a wrapper function that
-      // invokes the original. Plus, in case the function is actually a class constructor, you need to
-      // clone the prototype as well. One shortcoming here is that the produced function doesn't have
-      // the correct arity.
-      } else {
-        let original = object;
-        function Containerized() {
-          return original.apply(this, arguments);
-        }
-        Containerized.prototype = Object.assign(Object.create(Object.getPrototypeOf(original.prototype)), original.prototype);
-        return Containerized;
-      }
-    // Just return primitive values - passing through the function effectively clones them
-    } else if (!isObject(object)) {
-      return object;
-    // For objects, create a new object that shares our source object's prototype. Then copy over
-    // all the owned properties. From the outside, the result should be an identical object.
-    } else {
-      return Object.assign(Object.create(Object.getPrototypeOf(object)), object);
-    }
-  }
-
-  /**
    * For a given type, returns the names of all the available modules under that
    * type. Primarily used for debugging purposes (i.e. to show available modules
    * when a lookup of that type fails).
    */
   availableForType(type: string): string[] {
-    return this.lookupAll(type).keys();
+    return Object.keys(this.lookupAll(type));
   }
 }
 
@@ -235,9 +219,6 @@ export default class Container extends DenaliObject {
  */
 export function parseName(name: string): ParsedName {
   let [ type, modulePath ] = name.split(':');
-  if (modulePath === undefined || modulePath === 'undefined') {
-    throw new Error(`You tried to look up a ${ type } called undefined - did you pass in a variable that doesn't have the expected value?`);
-  }
   return {
     fullName: name,
     type,

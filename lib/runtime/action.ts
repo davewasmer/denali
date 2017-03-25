@@ -17,7 +17,7 @@ import eachPrototype from '../metal/each-prototype';
 import DenaliObject from '../metal/object';
 import Request from './request';
 import Logger from './logger';
-import Container from './container';
+import Container from '../metal/container';
 import Service from './service';
 import Errors from './errors';
 import Serializer from '../data/serializer';
