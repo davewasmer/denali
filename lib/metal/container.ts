@@ -11,7 +11,6 @@ import { Dict, Constructor } from '../utils/types';
 import DenaliObject from './object';
 import Resolver from './resolver';
 import { assign, mapValues } from 'lodash';
-import { IS_INJECTION } from './inject';
 
 export interface ParsedName {
   fullName: string;
@@ -160,12 +159,6 @@ export default class Container extends DenaliObject {
         }
       }
 
-      // Inject other references
-      this.applyInjections(object);
-      if (object.prototype) {
-        this.applyInjections(object.prototype);
-      }
-
       // Freeze the actual containered value to avoid allowing mutations. If `object` here is the
       // direct result of a require() call, then any mutations to it will be shared with other
       // containers that require() it (i.e. when running concurrent tests). If it's a singleton,
@@ -179,14 +172,6 @@ export default class Container extends DenaliObject {
     }
 
     return this.lookups.get(parsedName.fullName);
-  }
-
-  private applyInjections(object: any) {
-    forIn(object, (value, key) => {
-      if (value && value[IS_INJECTION]) {
-        object[key] = this.lookup(value.lookup);
-      }
-    });
   }
 
   /**
