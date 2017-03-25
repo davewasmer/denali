@@ -22,7 +22,7 @@ test('Router > runs middleware before determining routing', async (t) => {
       t.is(count, 2);
     }
   });
-  let router = container.lookup('app:router');
+  let router = <Router>container.lookup('app:router');
   router.use((req, res, next) => {
     count += 1;
     t.is(count, 1);
