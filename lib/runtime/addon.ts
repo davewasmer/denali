@@ -1,3 +1,8 @@
+import {
+  forEach,
+  omit,
+  noop
+ } from 'lodash';
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import * as glob from 'glob';
@@ -7,11 +12,6 @@ import { sync as isDirectory } from 'is-directory';
 import requireDir from '../utils/require-dir';
 import * as tryRequire from 'try-require';
 import * as stripExtension from 'strip-extension';
-import {
-  forEach,
-  omit,
-  noop
- } from 'lodash';
 import { singularize } from 'inflection';
 import * as createDebug from 'debug';
 import DenaliObject from '../metal/object';
@@ -19,6 +19,7 @@ import Container from './container';
 import Logger from './logger';
 import Router from './router';
 import Application from './application';
+import Resolver from './resolver';
 
 const debug = createDebug('denali:runtime:addon');
 
@@ -32,7 +33,6 @@ export interface AddonOptions {
   environment: string;
   dir: string;
   container: Container;
-  logger: Logger;
   pkg?: any;
 }
 
@@ -85,57 +85,36 @@ export default class Addon extends DenaliObject {
   public dir: string;
 
   /**
-   * The list of child addons that this addon contains
-   */
-  public addons: Addon[];
-
-  /**
-   * The application logger instance
+   * The package.json for this addon
    *
    * @since 0.1.0
-   */
-  protected logger: Logger;
-
-  /**
-   * The package.json for this addon
    */
   public pkg: any;
 
   /**
-   * Internal cache of the configuration that is specific to this addon
+   * The resolver instance to use with this addon.
+   *
+   * @since 0.1.0
    */
-  public _config: any;
+  public resolver: Resolver;
+
+  /**
+   * The consuming application container instance
+   *
+   * @since 0.1.0
+   */
+  public container: Container;
 
   constructor(options: AddonOptions) {
     super();
     this.environment = options.environment;
     this.dir = options.dir;
-    this.container = options.container;
-    this.logger = options.logger;
-
     this.pkg = options.pkg || tryRequire(findup('package.json', { cwd: this.dir }));
+    this.container = options.container;
+
+    this.resolver = this.resolver || new Resolver(this.dir);
+    this.container.addResolver(this.resolver);
     this.container.register(`addon:${ this.pkg.name }@${ this.pkg.version }`, this);
-    this._config = this.loadConfig();
-  }
-
-  /**
-   * The app directory for this addon. Override to customize where the app directory is stored in
-   * your addon.
-   *
-   * @since 0.1.0
-   */
-  get appDir(): string {
-    return path.join(this.dir, 'app');
-  }
-
-  /**
-   * The config directory for this addon. Override this to customize where the config files are
-   * stored in your addon.
-   *
-   * @since 0.1.0
-   */
-  public get configDir(): string {
-    return path.join(this.dir, 'config');
   }
 
   /**
@@ -146,131 +125,6 @@ export default class Addon extends DenaliObject {
    */
   public get name(): string {
     return (this.pkg && this.pkg.name) || 'anonymous-addon';
-  }
-
-  /**
-   * Load the config for this addon. The standard `config/environment.js` file is loaded by default.
-   * `config/middleware.js` and `config/routes.js` are ignored. All other userland config files are
-   * loaded into the container under their filenames.
-   *
-   * Config files are all .js files, so just the exported functions are loaded here. The functions
-   * are run later, during application initialization, to generate the actual runtime configuration.
-   */
-  protected loadConfig(): any {
-    let config = this.loadConfigFile('environment') || function() {
-      return {};
-    };
-    if (isDirectory(this.configDir)) {
-      let allConfigFiles = requireDir(this.configDir, { recurse: false });
-      let extraConfigFiles = omit(allConfigFiles, 'environment', 'middleware', 'routes');
-      forEach(extraConfigFiles, (configModule, configFilename) => {
-        let configModulename = stripExtension(configFilename);
-        this.container.register(`config:${ configModulename }`, configModule);
-      });
-    }
-    return config;
-  }
-
-  /**
-   * Load the addon's various assets. Loads child addons first, meaning that addon loading is
-   * depth-first recursive.
-   */
-  public load(): void {
-    debug(`loading ${ this.pkg.name }`);
-    this.loadInitializers();
-    this.loadMiddleware();
-    this.loadApp();
-    this.loadRoutes();
-  }
-
-  /**
-   * Load the initializers for this addon. Initializers live in `config/initializers`.
-   */
-  protected loadInitializers(): void {
-    let initializersDir = path.join(this.configDir, 'initializers');
-    if (isDirectory(initializersDir)) {
-      let initializers = requireDir(initializersDir);
-      forEach(initializers, (initializer, name) => {
-        this.container.register(`initializer:${ name }`, initializer);
-      });
-    }
-  }
-
-  /**
-   * Load the middleware for this addon. Middleware is specified in `config/middleware.js`. The file
-   * should export a function that accepts the router as it's single argument. You can then attach
-   * any middleware you'd like to that router, and it will execute before any route handling by
-   * Denali.
-   *
-   * Typically this is useful to register global middleware, i.e. a CORS handler, cookie parser,
-   * etc.
-   *
-   * If you want to run some logic before certain routes only, try using filters on your actions
-   * instead.
-   */
-  protected loadMiddleware(): void {
-    this._middleware = this.loadConfigFile('middleware') || noop;
-  }
-
-  /**
-   * The middleware factory for this addon.
-   */
-  public _middleware: (router: Router, application: Application) => void;
-
-  /**
-   * Loads the routes for this addon. Routes are defined in `config/routes.js`. The file should
-   * export a function that defines routes. See the Routing guide for details on how to define
-   * routes.
-   */
-  protected loadRoutes(): void {
-    this._routes = this.loadConfigFile('routes') || noop;
-  }
-
-  /**
-   * The routes factory for this addon.
-   */
-  public _routes: (router: Router) => void;
-
-  /**
-   * Load the app assets for this addon. These are the various classes that live under `app/`,
-   * including actions, models, etc., as well as any custom class types.
-   *
-   * Files are loaded into the container under their folder's namespace, so `app/roles/admin.js`
-   * would be registered as 'role:admin' in the container. Deeply nested folders become part of the
-   * module name, i.e. `app/roles/employees/manager.js` becomes 'role:employees/manager'.
-   *
-   * Non-JS files are loaded as well, and their container names include the extension, so
-   * `app/mailer/welcome.html` becomes `mail:welcome.html`.
-   */
-  protected loadApp(): void {
-    debug(`loading app for ${ this.pkg.name }`);
-    if (fs.existsSync(this.appDir)) {
-      eachDir(this.appDir, (dirname) => {
-        debug(`loading ${ dirname } for ${ this.pkg.name }`);
-        let dir = path.join(this.appDir, dirname);
-        let type = singularize(dirname);
-
-        glob.sync('**/*', { cwd: dir }).forEach((filepath) => {
-          let modulepath = stripExtension(filepath);
-          if (filepath.endsWith('.js')) {
-            let Class = require(path.join(dir, filepath));
-            Class = Class.default || Class;
-            this.container.register(`${ type }:${ modulepath }`, Class);
-          } else if (filepath.endsWith('.json')) {
-            let mod = require(path.join(dir, filepath));
-            this.container.register(`${ type }:${ modulepath }`, mod.default || mod);
-          }
-        });
-      });
-    }
-  }
-
-  /**
-   * Helper to load a file from the config directory
-   */
-  protected loadConfigFile(filename: string): any {
-    let configModule = tryRequire(path.join(this.configDir, `${ filename }.js`));
-    return configModule && (configModule.default || configModule);
   }
 
   /**
