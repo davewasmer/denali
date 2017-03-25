@@ -1,228 +1,241 @@
 import {
-  camelCase,
-  forOwn,
-  isObject,
-  forEach,
   defaults,
-  forIn
+  camelCase,
+  omitBy,
+  forEach
 } from 'lodash';
-import * as dedent from 'dedent-js';
-import { Dict, Constructor } from '../utils/types';
-import DenaliObject from './object';
 import Resolver from './resolver';
-import { assign, mapValues } from 'lodash';
-import { IS_INJECTION } from './inject';
+import { Dict, Constructor } from '../utils/types';
 
-export interface ParsedName {
+interface Lookup {
+  factory: Factory<any>;
+  instance: any;
+}
+
+export interface ParsedSpecifier {
   fullName: string;
-  type: string;
-  modulePath: string;
   moduleName: string;
+  modulePath: string;
+  type: string;
 }
 
 export interface ContainerOptions {
-  containerize?: boolean;
+  /**
+   * The container should treat the member as a singleton. If paired with `instantiate`, the
+   * container will create that singleton on the first lookup. If not, then the container will
+   * assume to member is already a singleton
+   */
   singleton?: boolean;
+  /**
+   * The container should create an instance on lookup. If `singleton` is also true, only one
+   * instance will be created
+   */
+  instantiate?: boolean;
 }
 
-const DEFAULT_CONTAINER_OPTIONS = {
-  containerize: true,
-  singleton: false
-}
-
-
-/**
- * The Container houses all the various classes that makeup a Denali app's
- *
- * runtime. It holds references to the modules themselves, as well as managing lookup logic (i.e.
- * some types of classes fall back to a generic "application" class if a more specific one is not
- * found.
- *
- * @package runtime
- * @since 0.1.0
- */
-export default class Container extends DenaliObject {
-
-  constructor(root: string | Resolver = process.cwd()) {
-    super();
-    this.resolvers.push(typeof root === 'string' ? new Resolver(root) : root);
-  }
-
-  /**
-   * An internal cache of lookups and their resolved values
-   */
-  private lookups: Map<string, any> = new Map();
-
-  /**
-   * Optional resolvers to use as a fallback if the default resolver is unable to resolve a lookup.
-   * Usually these are the resolvers for child addons, but you could also use a fallback resolver
-   * to support an alternative directory structure for your app. NOTE: this is NOT recommended, and
-   * may break compatibility with poorly designed addons as well as certainly CLI features.
-   */
-  private resolvers: Resolver[] = [];
-
-  /**
-   * Holds options for how to handle constructing member objects
-   */
-  private memberOptions: Map<string, ContainerOptions> = new Map([
-    [ 'app', { singleton: true } ],
-    [ 'orm-adapter', { singleton: true } ],
-    [ 'serializer', { singleton: true } ],
-    [ 'service', { singleton: true } ]
-  ]);
-
-  /**
-   * Add a fallback resolver to the bottom of the fallback queue.
-   *
-   * @since 0.1.0
-   */
-  public addResolver(resolver: Resolver) {
-    this.resolvers.push(resolver);
-  }
-
-  /**
-   * Register a value under the given `fullName` for later use.
-   *
-   * @since 0.1.0
-   */
-  public register(name: string, value: any, options?: ContainerOptions): void {
-    this.resolvers[0].register(name, value);
-    if (options) {
-      this.registerOptions(name, options);
-    }
-  }
-
-  /**
-   * Set options for how the given member will be constructed. Options passed in are merged with any
-   * existing options - they do not replace them entirely.
-   *
-   * @since 0.1.0
-   */
-  public registerOptions(name: string, options: ContainerOptions = {}): void {
-    let { fullName } = parseName(name);
-    let currentOptions = this.memberOptions.get(fullName);
-    this.memberOptions.set(fullName, assign(currentOptions, options));
-  }
-
-  /**
-   * Get the given option for the given member of the container
-   *
-   * @since 0.1.0
-   */
-  public optionFor(name: string, option?: keyof ContainerOptions): any {
-    let { type, fullName } = parseName(name);
-    let options = this.memberOptions.get(fullName);
-    let typeOptions = this.memberOptions.get(type);
-    let combinedOptions = defaults(defaults(options, typeOptions), DEFAULT_CONTAINER_OPTIONS);
-    if (!option) {
-      return combinedOptions;
-    }
-    return combinedOptions[option];
-  }
-
-  /**
-   * Lookup a value in the container. Uses type specific lookup logic if available.
-   *
-   * @since 0.1.0
-   */
-  public lookup(name: string, lookupOptions: { loose?: boolean, raw?: boolean } = {}): any {
-    let parsedName = parseName(name);
-
-    if (!this.lookups.has(parsedName.fullName)) {
-
-      // Find the member with the top level resolver
-      let object: any;
-      forEach(this.resolvers, (resolver) => {
-        object = resolver.retrieve(parsedName);
-        return !object; // Break loop if we found something
-      });
-
-      // Handle a bad lookup
-      if (!object) {
-        // Allow failed lookups (opt-in)
-        if (lookupOptions.loose) {
-          this.lookups.set(parsedName.fullName, null);
-          return null;
-        }
-        throw new Error(`No such ${ parsedName.type } found: '${ parsedName.moduleName }'`);
-      }
-
-      // Make the singleton if needed
-      if (this.optionFor(parsedName.fullName, 'singleton')) {
-        object = new object();
-      }
-
-      // Inject container references
-      if (this.optionFor(parsedName.fullName, 'containerize')) {
-        object.container = this;
-        if (object.prototype) {
-          object.prototype.container = this;
-        }
-      }
-
-      // Inject other references
-      this.applyInjections(object);
-      if (object.prototype) {
-        this.applyInjections(object.prototype);
-      }
-
-      // Freeze the actual containered value to avoid allowing mutations. If `object` here is the
-      // direct result of a require() call, then any mutations to it will be shared with other
-      // containers that require() it (i.e. when running concurrent tests). If it's a singleton,
-      // this isn't necessary since each container gets it's own instance. But if it's not, then we
-      // freeze it to prevent mutations which can lead to extremely difficult to trace bugs.
-      if (!this.optionFor(parsedName.fullName, 'singleton')) {
-        object = Object.freeze(object);
-      }
-
-      this.lookups.set(parsedName.fullName, object);
-    }
-
-    return this.lookups.get(parsedName.fullName);
-  }
-
-  private applyInjections(object: any) {
-    forIn(object, (value, key) => {
-      if (value && value[IS_INJECTION]) {
-        object[key] = this.lookup(value.lookup);
-      }
-    });
-  }
-
-  /**
-   * Lookup all modules of a specific type in the container. Returns an object of all the modules
-   * keyed by their module path (i.e. `role:employees/manager` would be found under
-   * `lookupAll('role')['employees/manager']`
-   */
-  public lookupAll(type: string): { [modulePath: string]: any } {
-    let resolverResultsets = this.resolvers.map((resolver) => {
-      return resolver.retrieveAll(type);
-    });
-    let mergedResultset = <{ [modulePath: string]: any }>(<any>assign)(...resolverResultsets.reverse());
-    return mapValues(mergedResultset, (rawResolvedObject, modulePath) => {
-      return this.lookup(`${ type }:${ modulePath }`);
-    });
-  }
-
-  /**
-   * For a given type, returns the names of all the available modules under that
-   * type. Primarily used for debugging purposes (i.e. to show available modules
-   * when a lookup of that type fails).
-   */
-  availableForType(type: string): string[] {
-    return Object.keys(this.lookupAll(type));
-  }
+export interface FactoryDefinition<T> extends Constructor<T> {
+  teardownInstance?(instance: object): void;
 }
 
 /**
- * Take the supplied name which can come in several forms, and normalize it.
+ * A Factory is a wrapper object around a containered class. It includes the original class, plus a
+ * `create()` method that is responsible for creating a new instance and applying any appropriate
+ * injections.
+ *
+ * The Factory object is used to isolate this injection logic to a single spot. The container uses
+ * this Factory object internally when instantiating during a `lookup` call. Users can also fetch
+ * this Factory via `factoryFor()` if they want to control instantiation. A good example here is
+ * Models. We could allow the container to instantiate models by setting `instantiate: true`, but
+ * that is inconvenient - Models typically take constructor arguments (container instantiation
+ * doesn't support that), and we frequently want to fetch the Model class itself, which is
+ * cumbersome with `instantiate: true`.
+ *
+ * Instead, users can simply use `factoryFor` to fetch this Factory wrapper. Then they can
+ * instantiate the object however they like.
  */
-export function parseName(name: string): ParsedName {
-  let [ type, modulePath ] = name.split(':');
+export interface Factory<T> {
+  class: FactoryDefinition<T>;
+  create(...args: any[]): T;
+  teardownInstance(instance: any): void;
+}
+
+/**
+ * Parse a specifier string into a structured object with fields for each part of the specifier.
+ */
+export function parseSpecifier(specifier: string): ParsedSpecifier {
+  let [ type, modulePath ] = specifier.split(':');
   return {
-    fullName: name,
+    fullName: specifier,
     type,
     modulePath,
     moduleName: camelCase(modulePath)
   };
+}
+
+export default class Container {
+
+  /**
+   * Manual registrations that should override resolver retrieved values
+   */
+  private registry: Dict<FactoryDefinition<any>> = {};
+
+  /**
+   * An array of resolvers used to retrieve container members. Resolvers are tried in order, first
+   * to find the member wins.
+   */
+  private resolvers: Resolver[];
+
+  /**
+   * Cache of lookup values
+   */
+  private lookups: Dict<Lookup> = {};
+
+  /**
+   * Cache of factory definitions
+   */
+  private factoryDefinitionLookups: Dict<FactoryDefinition<any>> = {};
+
+  /**
+   * Options map for container members. Keyed on specifier or type.
+   */
+  private options: Dict<ContainerOptions> = {};
+
+  constructor(root: string) {
+    this.resolvers.push(new Resolver(root));
+  }
+
+  /**
+   * Add a resolver to the container to use for lookups. New resolvers are added at lowest priority,
+   * so all previously added resolvers will take precedence.
+   */
+  addResolver(resolver: Resolver) {
+    this.resolvers.push(resolver);
+  }
+
+  /**
+   * Return the factory for the given specifier. Typically only used when you need to control when
+   * an object is instantiated.
+   */
+  factoryFor<T>(specifier: string, options: { loose?: boolean } = {}): Factory<T> {
+    let factoryDefinition: FactoryDefinition<T> = this.factoryDefinitionLookups[specifier];
+
+    if (!factoryDefinition) {
+      factoryDefinition = this.registry[specifier];
+
+      if (!factoryDefinition) {
+        forEach(this.resolvers, (resolver) => {
+          factoryDefinition = resolver.retrieve(specifier);
+          if (factoryDefinition) {
+            return false;
+          }
+        })
+      }
+
+      if (factoryDefinition) {
+        this.factoryDefinitionLookups[specifier] = factoryDefinition;
+      }
+    }
+
+    if (!factoryDefinition) {
+      if (options.loose) {
+        return;
+      }
+      throw new Error(`No factory found for ${ specifier }`);
+    }
+
+    return this.buildFactory(specifier, factoryDefinition);
+  }
+
+  /**
+   * Lookup the given specifier in the container. If options.loose is true, failed lookups will
+   * return undefined rather than throw.
+   */
+  lookup<T>(specifier: string, options: { loose?: boolean } = {}): T | FactoryDefinition<T> {
+    let singleton = (this.getOption(specifier, 'singleton') !== false);
+
+    if (singleton) {
+      let lookup = this.lookups[specifier];
+      if (lookup) {
+        return lookup.instance;
+      }
+    }
+
+    let factory = this.factoryFor<T>(specifier, options);
+    if (!factory) { return; }
+
+    if (this.getOption(specifier, 'instantiate') === false) {
+      return factory.class;
+    }
+
+    let instance = factory.create();
+
+    if (singleton && instance) {
+      this.lookups[specifier] = { factory, instance };
+    }
+
+    return instance;
+  }
+
+  lookupAll<T>(type: string): Dict<T> {
+    let registrations = omitBy(this.registry, (registration, specifier) => {
+      return specifier.startsWith(type);
+    });
+    let resolved = this.resolvers.reduce((members, resolver) => {
+      return Object.assign(members, resolver.retrieveAll(type));
+    }, {});
+    return Object.assign(resolved, registrations);
+  }
+
+  /**
+   * Return the value for the given option on the given specifier. Specifier may be a full specifier
+   * or just a type.
+   */
+  getOption(specifier: string, optionName: keyof ContainerOptions): any {
+    let { type } = parseSpecifier(specifier);
+    let options = defaults(this.options[specifier], this.options[type]);
+    return options[optionName];
+  }
+
+  /**
+   * Set the give option for the given specifier or type.
+   */
+  setOption(specifier: string, optionName: keyof ContainerOptions, value: any): void {
+    if (!this.options[specifier]) {
+      this.options[specifier] = { singleton: false, instantiate: false };
+    }
+    this.options[specifier][optionName] = value;
+  }
+
+  /**
+   * Teardown this container. Iterates through all the values that have been looked up, and invokes
+   * that item's factory's teardownInstance method.
+   */
+  teardown(): void {
+    let specifiers = Object.keys(this.lookups);
+
+    for (let i=0;i<specifiers.length;i++) {
+      let specifier = specifiers[i];
+      let { factory, instance } = this.lookups[specifier];
+      factory.teardownInstance(instance);
+    }
+  }
+
+  /**
+   * Build the factory wrapper for a given container member
+   */
+  private buildFactory<T>(specifier: string, factoryDefinition: FactoryDefinition<T>): Factory<T> {
+    return {
+      class: factoryDefinition,
+      teardownInstance: (instance) => {
+        if (factoryDefinition.teardownInstance) {
+          factoryDefinition.teardownInstance(instance);
+        }
+      },
+      create(...args: any[]) {
+        let instance = new factoryDefinition(...args);
+        this.applyInjections(instance);
+        return instance;
+      }
+    }
+  }
 }

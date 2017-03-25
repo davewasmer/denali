@@ -5,13 +5,13 @@ import {
 } from 'lodash';
 import * as path from 'path';
 import * as fs from 'fs';
-import { parseName, ParsedName, ContainerOptions } from './container';
+import { parseSpecifier, ParsedSpecifier, ContainerOptions } from './container';
 import * as tryRequire from 'try-require';
 import { pluralize } from 'inflection';
 import requireDir from '../utils/require-dir';
 
 interface RetrieveMethod {
-  (parsedName: ParsedName): any;
+  (parsedName: ParsedSpecifier): any;
 }
 
 export interface RetrieveAllMethod {
@@ -43,7 +43,7 @@ export default class Resolver {
    * retrieved from the filesystem.
    */
   public register(name: string, value: any) {
-    this.registry.set(parseName(name).fullName, value);
+    this.registry.set(parseSpecifier(name).fullName, value);
   }
 
   /**
@@ -51,46 +51,46 @@ export default class Resolver {
    * members, then falls back to type specific retrieve methods that typically find the matching
    * file on the filesystem.
    */
-  public retrieve(parsedName: ParsedName | string) {
-    if (typeof parsedName === 'string') {
-      parsedName = parseName(parsedName);
+  public retrieve(parsedSpecifier: ParsedSpecifier | string) {
+    if (typeof parsedSpecifier === 'string') {
+      parsedSpecifier = parseSpecifier(parsedSpecifier);
     }
-    if (this.registry.has(parsedName.fullName)) {
-      return this.registry.get(parsedName.fullName);
+    if (this.registry.has(parsedSpecifier.fullName)) {
+      return this.registry.get(parsedSpecifier.fullName);
     }
-    let retrieveMethod = <RetrieveMethod>this[`retrieve${ upperFirst(camelCase(parsedName.type)) }`];
+    let retrieveMethod = <RetrieveMethod>this[`retrieve${ upperFirst(camelCase(parsedSpecifier.type)) }`];
     if (!retrieveMethod) {
       retrieveMethod = this.retrieveOther;
     }
-    let result = retrieveMethod.call(this, parsedName);
+    let result = retrieveMethod.call(this, parsedSpecifier);
     return result && result.default || result;
   }
 
   /**
    * Unknown types are assumed to exist underneath the `app/` folder
    */
-  protected retrieveOther(parsedName: ParsedName) {
+  protected retrieveOther(parsedName: ParsedSpecifier) {
     return tryRequire(path.join(this.root, 'app', pluralize(parsedName.type), parsedName.modulePath));
   }
 
   /**
    * App files are found in `app/*`
    */
-  protected retrieveApp(parsedName: ParsedName) {
+  protected retrieveApp(parsedName: ParsedSpecifier) {
     return tryRequire(path.join(this.root, 'app', parsedName.modulePath));
   }
 
   /**
    * Config files are found in `config/`
    */
-  protected retrieveConfig(parsedName: ParsedName) {
+  protected retrieveConfig(parsedName: ParsedSpecifier) {
     return tryRequire(path.join(this.root, 'config', parsedName.modulePath));
   }
 
   /**
    * Initializer files are found in `config/initializers/`
    */
-  protected retrieveInitializer(parsedName: ParsedName) {
+  protected retrieveInitializer(parsedName: ParsedSpecifier) {
     return tryRequire(path.join(this.root, 'config', 'initializers', parsedName.modulePath));
   }
 
@@ -101,7 +101,7 @@ export default class Resolver {
   public retrieveAll(type: string) {
     let manualRegistrations: { [modulePath: string]: any } = {};
     this.registry.forEach((entry, fullName) => {
-      let parsedName = parseName(fullName);
+      let parsedName = parseSpecifier(fullName);
       if (parsedName.type === type) {
         manualRegistrations[parsedName.modulePath] = entry;
       }
@@ -128,7 +128,7 @@ export default class Resolver {
   /**
    * App files are found in `app/*`
    */
-  protected retrieveAllApp(parsedName: ParsedName) {
+  protected retrieveAllApp(parsedName: ParsedSpecifier) {
     let appDir = path.join(this.root, 'app');
     if (fs.existsSync(appDir)) {
       return requireDir(appDir, { recurse: false });

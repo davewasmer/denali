@@ -23,6 +23,7 @@ import mixin, { createMixin, MixinFactory, MixinApplicator } from './metal/mixin
 import eachPrototype from './metal/each-prototype';
 import Container from './metal/container';
 import Resolver from './metal/resolver';
+import inject from './metal/inject';
 
 // Runtime
 import Action from './runtime/action';
@@ -63,6 +64,7 @@ export {
   eachPrototype,
   Container,
   Resolver,
+  inject,
 
   // Runtime
   Action,

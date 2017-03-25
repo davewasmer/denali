@@ -1,6 +1,6 @@
 /* tslint:disable:completed-docs no-empty no-invalid-this member-access */
 import test from 'ava';
-import { Container } from 'denali';
+import { Container, inject } from 'denali';
 
 test('register(type, value) registers a value on the container', async (t) => {
   let container = new Container();
@@ -57,4 +57,27 @@ test('availableForType() returns all registered instances of a type', async (t) 
   container.register('foo:d', {d: true});
 
   t.deepEqual(container.availableForType('foo'), ['a', 'b', 'c', 'd']);
+});
+
+test('properties marked as injections are injected', async (t) => {
+  let container = new Container();
+  container.register('bar:main', { isPresent: true });
+  container.register('foo:main', {
+    bar: inject('bar:main')
+  });
+  let foo = container.lookup('foo:main');
+
+  t.true(foo.bar.isPresent, 'injection was applied');
+});
+
+test('prototype properties marked as injections are injected', async (t) => {
+  let container = new Container();
+  container.register('bar:main', { isPresent: true });
+  container.register('foo:main', class Foo {
+    bar = inject('bar:main');
+  });
+  let FooClass = container.lookup('foo:main');
+  let foo = new FooClass();
+
+  t.true(foo.bar.isPresent, 'injection was applied');
 });

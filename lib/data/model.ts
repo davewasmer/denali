@@ -67,7 +67,8 @@ export default class Model extends DenaliObject {
     debug(`${ this.type } find: ${ id }`);
     assert(id != null, `You must pass an id to Model.find(id)`);
     let result = await this.adapter.find(this.type, id, options);
-    return new this(result);
+    let Factory = this.container.factoryFor(`model:${ this.type }`);
+    return Factory.create(result);
   }
 
   /**
