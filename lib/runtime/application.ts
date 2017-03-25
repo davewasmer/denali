@@ -207,9 +207,9 @@ export default class Application extends Addon {
         server = http.createServer(handler).listen(port, resolve);
       }
       this.drainers.push(async function drainHttp() {
-        await new Promise((resolve) => {
-          server.close(resolve);
-          setTimeout(resolve, 60 * 1000);
+        await new Promise((resolveDrainer) => {
+          server.close(resolveDrainer);
+          setTimeout(resolveDrainer, 60 * 1000);
         })
       });
     });
