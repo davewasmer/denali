@@ -13,6 +13,7 @@ import Logger from './logger';
 import Container from './container';
 import Action from './action';
 import Serializer from '../data/serializer';
+import Parser from '../data/parser';
 import {
   find,
   forEach
@@ -154,26 +155,22 @@ export default class Router extends DenaliObject implements RouterDSL {
         container: this.container
       });
 
-      let serializer: Serializer | false;
-      if (action.serializer != null) {
-        if (typeof action.serializer === 'string') {
-          serializer = this.container.lookup(`serializer:${ action.serializer }`);
-        } else if (action.serializer === false) {
-          serializer = null;
+      let parser: Parser;
+      if (action.parser) {
+        if (typeof action.parser === 'string') {
+          parser = this.container.lookup(`parser:${ action.parser }`);
         } else {
-          serializer = <Serializer | false>action.serializer;
+          parser = action.parser;
         }
       } else {
-        serializer = this.container.lookup('serializer:application');
+        parser = <Parser>this.container.lookup('parser:application');
       }
 
-      if (typeis.hasBody(request) && request.body && serializer) {
-        debug(`[${ request.id }]: parsing request body`);
-        request.body = serializer.parse(request.body);
-      }
+      debug(`[${ request.id }]: parsing request`);
+      let parsedRequest = parser.parse(request);
 
       debug(`[${ request.id }]: running action`);
-      response = await action.run();
+      response = await action.run(parsedRequest);
 
     } catch (error) {
       response = await this.handleError(request, res, error);

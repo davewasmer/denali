@@ -1,5 +1,4 @@
 import DenaliObject from '../metal/object';
-import { exec } from 'child_process';
 import Response from '../runtime/response';
 import Container from '../runtime/container';
 

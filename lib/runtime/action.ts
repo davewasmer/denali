@@ -21,6 +21,7 @@ import Container from './container';
 import Service from './service';
 import Errors from './errors';
 import Serializer from '../data/serializer';
+import { ParsedRequest } from '../data/parser';
 
 const debug = createDebug('denali:action');
 
@@ -135,6 +136,14 @@ abstract class Action extends DenaliObject {
   public serializer: string | boolean = null;
 
   /**
+   * The parser that should be used when parsing the incoming request body for this Action. Falls
+   * back to the 'application' parser if not specified.
+   *
+   * @since 0.1.0
+   */
+  public parser: string = null;
+
+  /**
    * The application config
    *
    * @since 0.1.0
@@ -234,22 +243,12 @@ abstract class Action extends DenaliObject {
    * You shouldn't invoke this directly - Denali will automatically wire up your routes to this
    * method.
    */
-  public async run(): Promise<Response> {
-    // Merge all available params into a single convenience object. The original params (query,
-    // body, url) can all be accessed at their original locations still if you want.
-    let paramSources = [
-      (this.request.route && this.request.route.additionalParams) || {},
-      this.request.params,
-      this.request.query,
-      this.request.body
-    ];
-    let params = assign<any>({}, ...paramSources);
-
+  public async run(parsedRequest: ParsedRequest): Promise<Response> {
     // Content negotiation. Pick the best responder method based on the incoming content type and
     // the available responder types.
     let respond = this._pickBestResponder();
     debug(`[${ this.request.id }]: content negotiation picked \`${ respond.name }()\` responder method`);
-    respond = respond.bind(this, params);
+    respond = respond.bind(this, parsedRequest);
 
     // Build the before and after filter chains
     let { beforeChain, afterChain } = this._buildFilterChains();
@@ -258,19 +257,18 @@ abstract class Action extends DenaliObject {
 
     let instrumentation = Instrumentation.instrument('action.run', {
       action: this.constructor.name,
-      params,
-      headers: this.request.headers
+      parsedRequest
     });
 
     let response: Response;
     try {
       debug(`[${ this.request.id }]: running before filters`);
-      await this._invokeFilters(beforeChain, params, true);
+      await this._invokeFilters(beforeChain, parsedRequest, true);
       debug(`[${ this.request.id }]: running responder`);
-      let result = await respond(params);
+      let result = await respond(parsedRequest);
       response = await render(result);
       debug(`[${ this.request.id }]: running after filters`);
-      await this._invokeFilters(afterChain, params, false);
+      await this._invokeFilters(afterChain, parsedRequest, false);
     } catch (error) {
       if (error instanceof PreemptiveRender) {
         response = error.response;
