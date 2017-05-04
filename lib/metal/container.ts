@@ -2,22 +2,14 @@ import {
   defaults,
   camelCase,
   omitBy,
-  forEach
+  forEach,
+  forOwn,
+  uniq,
+  zipObject
 } from 'lodash';
 import Resolver from './resolver';
 import { Dict, Constructor } from '../utils/types';
-
-interface Lookup {
-  factory: Factory<any>;
-  instance: any;
-}
-
-export interface ParsedSpecifier {
-  fullName: string;
-  moduleName: string;
-  modulePath: string;
-  type: string;
-}
+import { isInjection } from './inject';
 
 export interface ContainerOptions {
   /**
@@ -31,10 +23,6 @@ export interface ContainerOptions {
    * instance will be created
    */
   instantiate?: boolean;
-}
-
-export interface FactoryDefinition<T> extends Constructor<T> {
-  teardownInstance?(instance: object): void;
 }
 
 /**
@@ -54,52 +42,71 @@ export interface FactoryDefinition<T> extends Constructor<T> {
  * instantiate the object however they like.
  */
 export interface Factory<T> {
-  class: FactoryDefinition<T>;
+  class: Constructor<T>;
   create(...args: any[]): T;
-  teardownInstance(instance: any): void;
 }
 
 /**
- * Parse a specifier string into a structured object with fields for each part of the specifier.
+ * The container is the dependency injection solution for Denali. It is responsible for abstracting
+ * away where a class came from. This allows several things:
+ *
+ *   * Apps can consume classes that originate from anywhere in the addon dependency tree, without
+ *     needing to care/specify where.
+ *   * We can more easily test parts of the framework by mocking out container entries instead of
+ *     dealing with hardcoding dependencies
+ *   * Support clean injection syntax, i.e. `mailer = service();`.
+ *
+ * In order to do these, the container must control creating instances of any classes it holds. This
+ * allows us to ensure injections are applied to every instance. If you need to create your own
+ * instance of a class, you can use the `factoryFor` method which allows you to create your own
+ * instance with injections properly applied.
+ *
+ * However, this should be relatiely rare - most of the time you'll be dealing with objects that
+ * are controlled by the framework.
  */
-export function parseSpecifier(specifier: string): ParsedSpecifier {
-  let [ type, modulePath ] = specifier.split(':');
-  return {
-    fullName: specifier,
-    type,
-    modulePath,
-    moduleName: camelCase(modulePath)
-  };
-}
-
 export default class Container {
 
   /**
    * Manual registrations that should override resolver retrieved values
    */
-  private registry: Dict<FactoryDefinition<any>> = {};
+  private registry: Dict<Constructor<any>> = {};
 
   /**
    * An array of resolvers used to retrieve container members. Resolvers are tried in order, first
-   * to find the member wins.
+   * to find the member wins. Normally, each addon will supply it's own resolver, allowing for
+   * addon order and precedence when looking up container entries.
    */
   private resolvers: Resolver[];
 
   /**
-   * Cache of lookup values
+   * Internal cache of lookup values
    */
-  private lookups: Dict<Lookup> = {};
+  private lookups: Dict<{ factory: Factory<any>, instance: any }> = {};
 
   /**
-   * Cache of factory definitions
+   * Internal cache of classes
    */
-  private factoryDefinitionLookups: Dict<FactoryDefinition<any>> = {};
+  private classLookups: Dict<Constructor<any>> = {};
 
   /**
-   * Options map for container members. Keyed on specifier or type.
+   * Internal cache of factories
+   */
+  private factoryLookups: Dict<Factory<any>> = {};
+
+  /**
+   * Options for container entries. Keyed on specifier or type. See ContainerOptions.
    */
   private options: Dict<ContainerOptions> = {};
 
+  /**
+   * Internal cache of injections per class, so we can avoid redoing expensive for..in loops on,
+   * every instance, and instead do a fast Object.assign
+   */
+  private injectionsCache: Map<any, Dict<any>> = new Map();
+
+  /**
+   * Create a new container with a base (highest precedence) resolver at the given directory.
+   */
   constructor(root: string) {
     this.resolvers.push(new Resolver(root));
   }
@@ -113,45 +120,61 @@ export default class Container {
   }
 
   /**
+   * Add a manual registration that will take precedence over any resolved lookups.
+   */
+  register(specifier: string, entry: any, options?: ContainerOptions) {
+    this.registry[specifier] = entry;
+    if (options) {
+      forOwn(options, (value, key: keyof ContainerOptions) => {
+        this.setOption(specifier, key, value);
+      })
+    }
+  }
+
+  /**
    * Return the factory for the given specifier. Typically only used when you need to control when
    * an object is instantiated.
    */
-  factoryFor<T>(specifier: string, options: { loose?: boolean } = {}): Factory<T> {
-    let factoryDefinition: FactoryDefinition<T> = this.factoryDefinitionLookups[specifier];
+  factoryFor<T = any>(specifier: string, options: { loose?: boolean } = {}): Factory<T> {
+    let factory = this.factoryLookups[specifier];
+    if (!factory) {
+      let klass = this.classLookups[specifier];
 
-    if (!factoryDefinition) {
-      factoryDefinition = this.registry[specifier];
+      if (!klass) {
+        klass = this.registry[specifier];
 
-      if (!factoryDefinition) {
-        forEach(this.resolvers, (resolver) => {
-          factoryDefinition = resolver.retrieve(specifier);
-          if (factoryDefinition) {
-            return false;
-          }
-        })
+        if (!klass) {
+          forEach(this.resolvers, (resolver) => {
+            klass = resolver.retrieve(specifier);
+            if (klass) {
+              return false;
+            }
+          })
+        }
+
+        if (klass) {
+          this.classLookups[specifier] = klass;
+        }
       }
 
-      if (factoryDefinition) {
-        this.factoryDefinitionLookups[specifier] = factoryDefinition;
+      if (!klass) {
+        if (options.loose) {
+          return;
+        }
+        throw new Error(`No class found for ${ specifier }`);
       }
+
+      factory = this.factoryLookups[specifier] = this.buildFactory(specifier, klass);
     }
-
-    if (!factoryDefinition) {
-      if (options.loose) {
-        return;
-      }
-      throw new Error(`No factory found for ${ specifier }`);
-    }
-
-    return this.buildFactory(specifier, factoryDefinition);
+    return factory;
   }
 
   /**
    * Lookup the given specifier in the container. If options.loose is true, failed lookups will
    * return undefined rather than throw.
    */
-  lookup<T>(specifier: string, options: { loose?: boolean } = {}): T | FactoryDefinition<T> {
-    let singleton = (this.getOption(specifier, 'singleton') !== false);
+  lookup<T = any>(specifier: string, options: { loose?: boolean } = {}): T | Constructor<T> {
+    let singleton = this.getOption(specifier, 'singleton') !== false;
 
     if (singleton) {
       let lookup = this.lookups[specifier];
@@ -176,14 +199,29 @@ export default class Container {
     return instance;
   }
 
-  lookupAll<T>(type: string): Dict<T> {
-    let registrations = omitBy(this.registry, (registration, specifier) => {
+  /**
+   * Lookup all the entries for a given type in the container. This will ask all resolvers to
+   * eagerly load all classes for this type. Returns an object whose keys are container specifiers
+   * and values are the looked up values for those specifiers.
+   */
+  lookupAll<T = any>(type: string): Dict<T> {
+    let entries = this.availableForType(type);
+    let values = entries.map((entry) => this.lookup(`${ type }:${ entry }`));
+    return <Dict<T>>zipObject(entries, values);
+  }
+
+  /**
+   * Returns an array of entry names for all entries under this type. Entries are eagerly looked up,
+   * so resolvers will actively scan for all matching files, for example. Use sparingly.
+   */
+  availableForType(type: string): string[] {
+    let registrations = Object.keys(this.registry).filter((specifier) => {
       return specifier.startsWith(type);
     });
-    let resolved = this.resolvers.reduce((members, resolver) => {
-      return Object.assign(members, resolver.retrieveAll(type));
-    }, {});
-    return Object.assign(resolved, registrations);
+    let resolved = this.resolvers.reduce((entries, resolver) => {
+      return entries.concat(resolver.availableForType(type));
+    }, []);
+    return uniq(registrations.concat(resolved));
   }
 
   /**
@@ -191,7 +229,7 @@ export default class Container {
    * or just a type.
    */
   getOption(specifier: string, optionName: keyof ContainerOptions): any {
-    let { type } = parseSpecifier(specifier);
+    let [ type ] = specifier.split(':');
     let options = defaults(this.options[specifier], this.options[type]);
     return options[optionName];
   }
@@ -207,33 +245,46 @@ export default class Container {
   }
 
   /**
-   * Teardown this container. Iterates through all the values that have been looked up, and invokes
-   * that item's factory's teardownInstance method.
+   * Given an instance, iterate through all it's properties, lookup any injections, and apply them.
+   * Cache injections discovered for classes so we can avoid the expensive property search on every
+   * instance. We can't just apply injections to the class prototype because injections are created
+   * via class properties, which are not enumerable.
    */
-  teardown(): void {
-    let specifiers = Object.keys(this.lookups);
-
-    for (let i=0;i<specifiers.length;i++) {
-      let specifier = specifiers[i];
-      let { factory, instance } = this.lookups[specifier];
-      factory.teardownInstance(instance);
+  private applyInjections(instance: any) {
+    if (instance.constructor) {
+      if (!this.injectionsCache.has(instance.constructor)) {
+        let injections: Dict<any> = {};
+        for (let key in instance) {
+          let value = instance[key];
+          if (isInjection(value)) {
+            injections[key] = this.lookup(value.lookup);
+          }
+        }
+        this.injectionsCache.set(instance.constructor, injections);
+      }
+      Object.assign(instance, this.injectionsCache.get(instance.constructor));
+    } else {
+      for (let key in instance) {
+        let value = instance[key];
+        if (isInjection(value)) {
+          (<any>instance)[key] = this.lookup(value.lookup);
+        }
+      }
     }
   }
 
   /**
    * Build the factory wrapper for a given container member
    */
-  private buildFactory<T>(specifier: string, factoryDefinition: FactoryDefinition<T>): Factory<T> {
+  private buildFactory<T>(specifier: string, klass: Constructor<T>): Factory<T> {
+    // Static injections
+    this.applyInjections(klass);
+    let container = this;
     return {
-      class: factoryDefinition,
-      teardownInstance: (instance) => {
-        if (factoryDefinition.teardownInstance) {
-          factoryDefinition.teardownInstance(instance);
-        }
-      },
+      class: klass,
       create(...args: any[]) {
-        let instance = new factoryDefinition(...args);
-        this.applyInjections(instance);
+        let instance = new klass(...args);
+        container.applyInjections(instance);
         return instance;
       }
     }

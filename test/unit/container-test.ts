@@ -1,24 +1,27 @@
 /* tslint:disable:completed-docs no-empty no-invalid-this member-access */
 import test from 'ava';
 import { Container, inject } from 'denali';
+import * as path from 'path';
+
+const dummyAppPath = path.join(__dirname, '..', 'dummy');
 
 test('register(type, value) registers a value on the container', async (t) => {
-  let container = new Container();
+  let container = new Container(dummyAppPath);
   container.register('foo:bar', { buzz: true });
-  t.true(container.lookup('foo:bar').buzz);
+  t.true(container.lookup<any>('foo:bar').buzz);
 });
 
 test('lookup(type) looks up a module', async (t) => {
-  let container = new Container();
+  let container = new Container(dummyAppPath);
   container.register('foo:bar', { buzz: true });
-  t.true(container.lookup('foo:bar').buzz);
+  t.true(container.lookup<any>('foo:bar').buzz);
 });
 
 test('lookupAll(type) returns an object with all the modules of the given type', async (t) => {
-  let container = new Container();
+  let container = new Container(dummyAppPath);
   container.register('foo:bar', { isBar: true });
   container.register('foo:buzz', { isBuzz: true });
-  let type = container.lookupAll('foo');
+  let type = container.lookupAll<any>('foo');
   t.truthy(type.bar);
   t.true(type.bar.isBar);
   t.truthy(type.buzz);
@@ -26,11 +29,11 @@ test('lookupAll(type) returns an object with all the modules of the given type',
 });
 
 test('instantiates a singleton', async (t) => {
-  let container = new Container();
+  let container = new Container(dummyAppPath);
   class Class {
     static singleton = true;
   }
-  container.registerOptions('foo', { singleton: true });
+  container.setOption('foo', 'singleton', true);
   container.register('foo:bar', Class);
 
   let classInstance = container.lookup('foo:bar');
@@ -40,16 +43,17 @@ test('instantiates a singleton', async (t) => {
 });
 
 test('lazily instantiates singletons (i.e. on lookup)', async (t) => {
-  let container = new Container();
+  let container = new Container(dummyAppPath);
   function Class() {
     t.fail('Class should not have been instantiated.');
   }
-  (<any>Class).singleton = true;
+  container.setOption('foo', 'singleton', true);
   container.register('foo:bar', Class);
+  t.pass();
 });
 
 test('availableForType() returns all registered instances of a type', async (t) => {
-  let container = new Container();
+  let container = new Container(dummyAppPath);
 
   container.register('foo:a', {a: true});
   container.register('foo:b', {b: true});
@@ -60,24 +64,12 @@ test('availableForType() returns all registered instances of a type', async (t) 
 });
 
 test('properties marked as injections are injected', async (t) => {
-  let container = new Container();
+  let container = new Container(dummyAppPath);
   container.register('bar:main', { isPresent: true });
   container.register('foo:main', {
     bar: inject('bar:main')
   });
-  let foo = container.lookup('foo:main');
-
-  t.true(foo.bar.isPresent, 'injection was applied');
-});
-
-test('prototype properties marked as injections are injected', async (t) => {
-  let container = new Container();
-  container.register('bar:main', { isPresent: true });
-  container.register('foo:main', class Foo {
-    bar = inject('bar:main');
-  });
-  let FooClass = container.lookup('foo:main');
-  let foo = new FooClass();
+  let foo = container.lookup<any>('foo:main');
 
   t.true(foo.bar.isPresent, 'injection was applied');
 });
