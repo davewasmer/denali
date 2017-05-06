@@ -13,9 +13,9 @@ import unwrap from '../../lib/utils/unwrap';
 export default class ActionBlueprint extends Blueprint {
 
   /* tslint:disable:completed-docs typedef */
-  public static blueprintName = 'action';
-  public static description = 'Generates a new action class & unit tests';
-  public static longDescription = unwrap`
+  static blueprintName = 'action';
+  static description = 'Generates a new action class & unit tests';
+  static longDescription = unwrap`
     Usage: denali generate action <name> [options]
 
     Generates an action with the given name (can be a deeply nested path), along with unit test
@@ -24,9 +24,9 @@ export default class ActionBlueprint extends Blueprint {
     Guides: http://denalijs.org/master/guides/application/actions/
   `;
 
-  public static params = '<name>';
+  static params = '<name>';
 
-  public static flags = {
+  static flags = {
     method: {
       description: 'The HTTP method to use for the route to this action',
       default: 'post',
@@ -34,9 +34,9 @@ export default class ActionBlueprint extends Blueprint {
     }
   };
 
-  public static runsInApp = true;
+  static runsInApp = true;
 
-  public locals(argv: any): any {
+  locals(argv: any): any {
     let name = argv.name;
     let levels = name.split('/').map(() => '..');
     levels.pop();
@@ -53,13 +53,13 @@ export default class ActionBlueprint extends Blueprint {
     };
   }
 
-  public async postInstall(argv: any): Promise<void> {
+  async postInstall(argv: any): Promise<void> {
     let name = argv.name;
     let method = argv.method || 'post';
     this.addRoute(method.toLowerCase(), `/${ name }`, name);
   }
 
-  public async postUninstall(argv: any): Promise<void> {
+  async postUninstall(argv: any): Promise<void> {
     let name = argv.name;
     let method = argv.method || 'post';
     this.removeRoute(method.toLowerCase(), `/${ name }`, name);

@@ -15,13 +15,13 @@ import { ui, Command, Project } from 'denali-cli';
 export default class ConsoleCommand extends Command {
 
   /* tslint:disable:completed-docs typedef */
-  public static commandName = 'console';
-  public static description = 'Launch a REPL with your application loaded';
-  public static longDescription = unwrap`
+  static commandName = 'console';
+  static description = 'Launch a REPL with your application loaded';
+  static longDescription = unwrap`
     Starts a REPL (Read-Eval-Print Loop) with your application initialized and
     loaded into memory. Type \`.help\` in the REPL environment for more details.`;
 
-  public static flags = {
+  static flags = {
     environment: {
       description: 'The target environment to build for.',
       default: process.env.NODE_ENV || 'development',
@@ -34,9 +34,9 @@ export default class ConsoleCommand extends Command {
     }
   };
 
-  public static runsInApp = true;
+  static runsInApp = true;
 
-  public async run(argv: any) {
+  async run(argv: any) {
     ui.info(`Loading ${ argv.environment } environment. Type '.help' for details`);
     let project = new Project({
       environment: argv.environment,

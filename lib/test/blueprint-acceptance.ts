@@ -11,7 +11,7 @@ export default class BlueprintAcceptanceTest extends CommandAcceptanceTest {
   /**
    * The name of the blueprint to test
    */
-  public blueprintName: string;
+  blueprintName: string;
 
   constructor(blueprintName: string) {
     super('');
@@ -22,7 +22,7 @@ export default class BlueprintAcceptanceTest extends CommandAcceptanceTest {
    * Run the generate command with the supplied blueprint name and return a Promise that resolves
    * when complete.
    */
-  public async generate(args: string) {
+  async generate(args: string) {
     this.command = `generate ${ this.blueprintName } ${ args }`;
     return this.run();
   }
@@ -31,7 +31,7 @@ export default class BlueprintAcceptanceTest extends CommandAcceptanceTest {
    * Run the destroy command with the supplied blueprint name and return a Promise that resolves
    * when complete.
    */
-  public async destroy(args: string) {
+  async destroy(args: string) {
     this.command = `destroy ${ this.blueprintName } ${ args }`;
     return this.run();
   }

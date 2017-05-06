@@ -25,15 +25,6 @@ export default class MockRequest extends Transform {
     remoteAddress: '123.45.67.89'
   };
 
-  protected _transform(chunk: string | Buffer | {}, encoding: string, next: () => void) {
-    if (typeof chunk !== 'string' && !Buffer.isBuffer(chunk)) {
-      chunk = JSON.stringify(chunk);
-    }
-    this.push(chunk);
-    next();
-  }
-  // tslint:enable:completed-docs
-
   constructor(options: { method?: string, url?: string, headers?: { [key: string]: string } } = {}) {
     super();
     this._writableState.objectMode = true;
@@ -60,5 +51,14 @@ export default class MockRequest extends Transform {
       this.rawHeaders = without(this.rawHeaders, 'content-type');
     }
   }
+
+  protected _transform(chunk: string | Buffer | {}, encoding: string, next: () => void) {
+    if (typeof chunk !== 'string' && !Buffer.isBuffer(chunk)) {
+      chunk = JSON.stringify(chunk);
+    }
+    this.push(chunk);
+    next();
+  }
+  // tslint:enable:completed-docs
 
 }

@@ -1,11 +1,11 @@
 import * as assert from 'assert';
 import * as path from 'path';
 import unwrap from '../lib/utils/unwrap';
-import { ui, spinner, Command, Project } from 'denali-cli';
+import { spinner, Command, Project } from 'denali-cli';
 import * as tryRequire from 'try-require';
 import * as cmdExists from 'command-exists';
 import * as Bluebird from 'bluebird';
-import { exec, ExecOptions } from 'child_process';
+import { exec } from 'child_process';
 
 const run = Bluebird.promisify<[ string, string ], string>(exec);
 const commandExists = Bluebird.promisify<boolean, string>(cmdExists);
@@ -18,13 +18,13 @@ const commandExists = Bluebird.promisify<boolean, string>(cmdExists);
 export default class MigrateCommand extends Command {
 
   /* tslint:disable:completed-docs typedef */
-  public static commandName = 'migrate';
-  public static description = 'Run migrations to update your database schema';
-  public static longDescription = unwrap`
+  static commandName = 'migrate';
+  static description = 'Run migrations to update your database schema';
+  static longDescription = unwrap`
     Runs (or rolls back) schema migrations for your database. Typically only
     applies when use SQL-based databases.`;
 
-  public static flags = {
+  static flags = {
     environment: {
       description: 'The target environment to build for.',
       default: process.env.NODE_ENV || 'development',
@@ -42,9 +42,9 @@ export default class MigrateCommand extends Command {
     }
   };
 
-  public static runsInApp = true;
+  static runsInApp = true;
 
-  public async run(argv: any) {
+  async run(argv: any) {
     let knex = tryRequire('knex');
     if (!knex) {
       await spinner.start('Installing knex (required for migrations)');

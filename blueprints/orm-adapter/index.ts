@@ -14,9 +14,9 @@ import unwrap from '../../lib/utils/unwrap';
 export default class ORMAdapterBlueprint extends Blueprint {
 
   /* tslint:disable:completed-docs typedef */
-  public static blueprintName = 'orm-adapter';
-  public static description = 'Generates a blank ORM adapter with stubs for all the required methods';
-  public static longDescription = unwrap`
+  static blueprintName = 'orm-adapter';
+  static description = 'Generates a blank ORM adapter with stubs for all the required methods';
+  static longDescription = unwrap`
     Usage: denali generate orm-adapter <name> [options]
 
     Generates a new ORM adapter with stubs for all the required adapter methods. Note: this is
@@ -26,9 +26,9 @@ export default class ORMAdapterBlueprint extends Blueprint {
     Guides: http://denalijs.org/master/guides/data/orm-adapters/
   `;
 
-  public static params = '<name>';
+  static params = '<name>';
 
-  public locals(argv: any) {
+  locals(argv: any) {
     let name = argv.name;
     name = singularize(name);
     return {

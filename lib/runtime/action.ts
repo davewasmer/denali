@@ -1,62 +1,60 @@
 import {
-  assign,
-  capitalize,
   isArray,
   uniq,
   flatten,
   compact,
-  map
+  map,
+  clone
 } from 'lodash';
 import Instrumentation from '../metal/instrumentation';
 import Model from '../data/model';
-import Response from './response';
-import * as http from 'http';
+import Parser from '../parse/parser';
 import * as createDebug from 'debug';
 import * as assert from 'assert';
 import eachPrototype from '../metal/each-prototype';
 import DenaliObject from '../metal/object';
 import Request from './request';
-import Logger from './logger';
-import Container from '../metal/container';
-import Service from './service';
 import Errors from './errors';
-import Serializer from '../data/serializer';
+import View from '../render/view';
+import { ServerResponse } from 'http';
+import { Dict } from '../utils/types';
+import inject from '../metal/inject';
+import Serializer from 'lib/render/serializer';
 
 const debug = createDebug('denali:action');
 
-const cachedFormats = new WeakMap<typeof Action, string[]>();
-const cachedFilters = {
-  before: new WeakMap<typeof Action, string[]>(),
-  after: new WeakMap<typeof Action, string[]>()
-};
-
-/**
- * An error used to break the chain of promises created by running filters. Indicates that a before
- * filter returned a value which will be rendered as the response, and that the remaining filters
- * and the responder method should not be run.
- */
-class PreemptiveRender extends Error {
-  public response: Response;
-  constructor(response: Response) {
-    super();
-    this.response = response;
-  }
-}
-
-/**
- * Constructor options for Action class
- *
- * @package runtime
- */
-export interface ActionOptions {
-  request: Request;
-  response: http.ServerResponse;
-  logger: Logger;
-  container: Container;
-}
-
 export interface Responder {
-  (params: any): Response | { [key: string]: any } | void;
+  (params: ResponderParams): any;
+}
+
+/**
+ * The parser determines the exact shape and structure of the arguments object passed into your
+ * Action's respond method. However, the common convention is to at least expose the properties
+ * listed below.
+ */
+export interface ResponderParams {
+  body?: any;
+  query?: Dict<any>;
+  headers?: Dict<any>;
+  params?: Dict<any>;
+  [key: string]: any;
+}
+
+export interface RenderOptions {
+  /**
+   * The view class that should be used to render this response. Overrides the `serializer` setting.
+   * This is useful if you want complete, low-level control over the rendering process - you'll have
+   * direct access to the response object, and can use it to render however you want. Render with
+   * a streaming JSON renderer, use an HTML templating engine, a binary protocol, etc.
+   */
+  view?: string;
+  /**
+   * Explicitly set the name of the serializer that should be used to render this response. If not
+   * provided, and the response body is a Model or array of Models, it will try to find a matching
+   * serializer and use that. If it can't find the matching serializer, or if the response body is
+   * another kind of object, it will fall back to the application serializer.
+   */
+  serializer?: string;
 }
 
 /**
@@ -76,28 +74,7 @@ export interface Responder {
  * @package runtime
  * @since 0.1.0
  */
-abstract class Action extends DenaliObject {
-
-  /**
-   * Cache the list of available formats this action can respond to.
-   */
-  private static formats(): string[] {
-    if (!cachedFormats.has(this)) {
-      debug(`caching list of content types accepted by ${ this.name } action`);
-      let formats: string[] = [];
-      eachPrototype(this.prototype, (proto) => {
-        formats = formats.concat(Object.getOwnPropertyNames(proto));
-      });
-      formats = formats.filter((prop) => {
-        return /^respondWith/.test(prop);
-      }).map((responder) => {
-        return responder.match(/respondWith(.+)/)[1].toLowerCase();
-      });
-      formats = uniq(formats);
-      cachedFormats.set(this, formats);
-    }
-    return cachedFormats.get(this);
-  }
+export default abstract class Action extends DenaliObject {
 
   /**
    * Invoked before the `respond()` method. The framework will invoke filters from parent classes
@@ -110,9 +87,13 @@ abstract class Action extends DenaliObject {
    * than null or undefined, Denali will attempt to render that response and halt further processing
    * of the request (including remaining before filters).
    *
+   * Filters must be defined as static properties to allow Denali to extract the values. Instance
+   * fields are not visible until instantiation, so there's no way to build an "accumulated" value
+   * from each step in the inheritance chain.
+   *
    * @since 0.1.0
    */
-  public static before: string[] = [];
+  static before: string[] = [];
 
   /**
    * Invoked after the `respond()` method. The framework will invoke filters from parent classes and
@@ -121,104 +102,94 @@ abstract class Action extends DenaliObject {
    * Filters can be synchronous, or return a promise (which will pause the before/respond/after
    * chain until it resolves).
    *
+   * Filters must be defined as static properties to allow Denali to extract the values. Instance
+   * fields are not visible until instantiation, so there's no way to build an "accumulated" value
+   * from each step in the inheritance chain.
+   *
    * @since 0.1.0
    */
-  public static after: string[] = [];
+  static after: string[] = [];
 
   /**
-   * Force which serializer should be used for the rendering of the response.
+   * Application config
+   */
+  config: any = inject('config:environment');
+
+  /**
+   * Force which parser should be used for parsing the incoming request.
    *
-   * By default if the response is of type Error it will use the 'error' serializer. On the other
-   * hand if it's a Model, it will use that model's serializer. Otherwise, it will use the
-   * 'application' serializer.
+   * By default it uses the application parser, but you can override with the name of the parser
+   * you'd rather use instead.
    *
    * @since 0.1.0
    */
-  public serializer: string | boolean = null;
+  parser: Parser = inject('parser:application');
 
   /**
    * The incoming Request that this Action is responding to.
    *
    * @since 0.1.0
    */
-  public request: Request;
+  request: Request;
 
   /**
-   * The application logger instance
+   * The outgoing HTTP server response
    *
    * @since 0.1.0
    */
-  public logger: Logger;
+  response: ServerResponse;
 
   /**
-   * The application container
-   *
-   * @since 0.1.0
+   * Track whether or not we have rendered yet
    */
-  public container: Container;
+  private hasRendered = false;
 
   /**
-   * Creates an Action that will respond to the given Request.
+   * The path to this action, i.e. 'users/create'
    */
-  constructor(options: ActionOptions) {
-    super();
-    this.request = options.request;
-    this.logger = options.logger;
-    this.container = options.container;
-  }
+  actionPath: string;
 
   /**
-   * Fetch a model class by it's type string, i.e. 'post' => PostModel
-   *
-   * @since 0.1.0
+   * Render the response body
    */
-  public modelFor(type: string): Model {
-    return this.container.lookup(`model:${ type }`);
-  }
+  async render(status: number, body?: any, options: RenderOptions = {}) {
+    this.hasRendered = true;
 
-  /**
-   * Fetch a service by it's container name, i.e. 'email' => 'services/email.js'
-   *
-   * @since 0.1.0
-   */
-  public service(type: string): Service {
-    return this.container.lookup(`service:${ type }`);
-  }
-
-  /**
-   * Render some supplied data to the response. Data can be:
-   *
-   *   * a Model instance
-   *   * an array of Model instances
-   *   * a Denali.Response instance
-   */
-  private async render(response: any): Promise<Response> {
     debug(`[${ this.request.id }]: rendering`);
-    if (!(response instanceof Response)) {
-      debug(`[${ this.request.id }]: wrapping returned value in a Response`);
-      response = new Response(200, response);
+    this.response.setHeader('X-Request-Id', this.request.id);
+
+    debug(`[${ this.request.id }]: setting response status code to ${ status }`);
+    this.response.statusCode = status;
+
+    if (!body) {
+      debug(`[${ this.request.id }]: no response body to render, response finished`);
+      this.response.end();
+      return;
     }
 
-    response.options.action = this;
+    // Render with a custom view if requested
+    if (options.view) {
+      let view = this.container.lookup<View>(`view:${ options.view }`);
+      assert(view, `No such view: ${ options.view }`);
+      debug(`[${ this.request.id }]: rendering response body with the ${ options.view } view`);
+      return await view.render(this, this.response, body, options);
+    }
 
-    if (response.body && response.options.raw !== true && this.serializer !== false) {
-      let sample = isArray(response.body) ? response.body[0] : response.body;
-      let type;
-      if (this.serializer) {
-        type = this.serializer;
-      } else if (sample instanceof Error) {
-        type = 'error';
-      } else if (sample instanceof Model) {
-        type = sample.type;
-      } else {
-        type = 'application';
+    // Pick the serializer to use
+    let serializerLookup = 'application';
+    if (options.serializer) {
+      serializerLookup = options.serializer;
+    } else {
+      let sample = isArray(body) ? body[0] : body;
+      if (sample instanceof Model) {
+        serializerLookup = sample.type;
       }
-      let serializer: Serializer = this.container.lookup(`serializer:${ type }`);
-      debug(`[${ this.request.id }]: serializing response body with ${ type } serializer`);
-      await serializer.serialize(response, assign({ action: this }, response.options));
     }
 
-    return response;
+    // Render with the serializer
+    let serializer = this.container.lookup<Serializer>(`serializer:${ serializerLookup }`);
+    debug(`[${ this.request.id }]: rendering response body with the ${ serializerLookup } serializer`);
+    return await serializer.render(this, this.response, body, options);
   }
 
   /**
@@ -228,81 +199,48 @@ abstract class Action extends DenaliObject {
    * You shouldn't invoke this directly - Denali will automatically wire up your routes to this
    * method.
    */
-  public async run(): Promise<Response> {
-    // Merge all available params into a single convenience object. The original params (query,
-    // body, url) can all be accessed at their original locations still if you want.
-    let paramSources = [
-      (this.request.route && this.request.route.additionalParams) || {},
-      this.request.params,
-      this.request.query,
-      this.request.body
-    ];
-    let params = assign<any>({}, ...paramSources);
+  async run(request: Request, response: ServerResponse) {
+    this.request = request;
+    this.response = response;
 
-    // Content negotiation. Pick the best responder method based on the incoming content type and
-    // the available responder types.
-    let respond = this._pickBestResponder();
-    debug(`[${ this.request.id }]: content negotiation picked \`${ respond.name }()\` responder method`);
-    respond = respond.bind(this, params);
+    // Parse the incoming request based on the action's chosen parser
+    debug(`[${ request.id }]: parsing request`);
+    let parsedRequest: ResponderParams = this.parser.parse(request);
 
     // Build the before and after filter chains
     let { beforeChain, afterChain } = this._buildFilterChains();
 
-    let render = this.render.bind(this);
-
     let instrumentation = Instrumentation.instrument('action.run', {
-      action: this.constructor.name,
-      params,
-      headers: this.request.headers
+      action: this.actionPath,
+      parsed: parsedRequest
     });
 
-    let response: Response;
-    try {
-      debug(`[${ this.request.id }]: running before filters`);
-      await this._invokeFilters(beforeChain, params, true);
+    // Before filters
+    debug(`[${ this.request.id }]: running before filters`);
+    await this._invokeFilters(beforeChain, parsedRequest);
+
+    // Responder
+    if (!this.hasRendered) {
       debug(`[${ this.request.id }]: running responder`);
-      let result = await respond(params);
-      response = await render(result);
-      debug(`[${ this.request.id }]: running after filters`);
-      await this._invokeFilters(afterChain, params, false);
-    } catch (error) {
-      if (error instanceof PreemptiveRender) {
-        response = error.response;
-      } else {
-        throw error;
-      }
-    } finally {
-      instrumentation.finish();
-    }
-    return response;
-  }
-
-  /**
-   * Find the best responder method for the incoming request, given the incoming request's Accept
-   * header.
-   *
-   * If the Accept header is "Accept: * / *", then the generic `respond()` method is selected.
-   * Otherwise, attempt to find the best responder method based on the mime types.
-   */
-  public _pickBestResponder(): Responder {
-    let responder: Responder = this.respond;
-    let bestFormat;
-    assert(typeof responder === 'function', `Your '${ this.constructor.name }' action must define a respond method.`);
-    if (this.request.get('accept') !== '*/*') {
-      let ActionClass = <typeof Action>this.constructor;
-      let formats = ActionClass.formats();
-      if (formats.length > 0) {
-        bestFormat = this.request.accepts(formats);
-        if (bestFormat === false) {
-          throw new Errors.NotAcceptable();
-        }
-        responder = <Responder>this[`respondWith${ capitalize(<string>bestFormat) }`];
+      let result = await this.respond(parsedRequest);
+      // Autorender if render has not been manually called and a value was returned
+      if (!this.hasRendered) {
+        debug(`[${ this.request.id }]: autorendering`);
+        await this.render(200, result);
       }
     }
-    return responder;
-  }
 
-  [key: string]: any;
+    // After filters
+    debug(`[${ this.request.id }]: running after filters`);
+    await this._invokeFilters(afterChain, parsedRequest);
+
+    // If no one has rendered, bail
+    if (!this.hasRendered) {
+      throw new Errors.InternalServerError(`${ this.actionPath } did not render anything`);
+    }
+
+    instrumentation.finish();
+  }
 
   /**
    * The default responder method. You should override this method with whatever logic is needed to
@@ -310,7 +248,29 @@ abstract class Action extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public abstract respond(params: any): Response | { [key: string]: any } | void;
+  abstract respond(params: ResponderParams): any;
+
+  /**
+   * Invokes the filters in the supplied chain in sequence.
+   */
+  private async _invokeFilters(chain: string[], parsedRequest: ResponderParams): Promise<any> {
+    chain = clone(chain);
+    while (chain.length > 0) {
+      let filterName = chain.shift();
+      let filter = <Responder>(<any>this)[filterName];
+      let instrumentation = Instrumentation.instrument('action.filter', {
+        action: this.actionPath,
+        request: parsedRequest,
+        filter: filterName
+      });
+      debug(`[${ this.request.id }]: running '${ filterName }' filter`);
+      let filterResult = await filter.call(this, parsedRequest);
+      instrumentation.finish();
+      if (this.hasRendered || filterResult) {
+        return filterResult;
+      }
+    }
+  }
 
   /**
    * Walk the prototype chain of this Action instance to find all the `before` and `after` arrays to
@@ -322,54 +282,28 @@ abstract class Action extends DenaliObject {
    * Throws if it encounters the name of a filter method that doesn't exist.
    */
   private _buildFilterChains(): { beforeChain: string[], afterChain: string[] } {
-    let ActionClass = <typeof Action>this.constructor;
-    if (!cachedFilters.before.has(ActionClass)) {
+    let meta = this.container.metaFor(this.constructor);
+    if (!meta.beforeFiltersCache) {
       let prototypeChain: Action[] = [];
-      eachPrototype(ActionClass, (prototype) => {
+      eachPrototype(<typeof Action>this.constructor, (prototype) => {
         prototypeChain.push(prototype);
       });
-      [ 'before', 'after' ].forEach((stage: 'before' | 'after') => {
-        let filterNames = <string[]>compact(uniq(flatten(map(prototypeChain, stage))));
+      prototypeChain = prototypeChain.reverse();
+      [ 'before', 'after' ].forEach((stage) => {
+        let cache: string[] = meta[`${ stage }FiltersCache`] = [];
+        let filterNames = compact(uniq(flatten(map<Action, string[]>(prototypeChain, stage))));
         filterNames.forEach((filterName) => {
-          if (!this[filterName]) {
-            throw new Error(`${ filterName } method not found on the ${ ActionClass.name } action.`);
+          if (!(<any>this)[filterName]) {
+            throw new Error(`${ filterName } method not found on the ${ this.actionPath } action.`);
           }
+          cache.push(filterName);
         });
-        cachedFilters[stage].set(ActionClass, filterNames);
       });
     }
     return {
-      beforeChain: cachedFilters.before.get(ActionClass),
-      afterChain: cachedFilters.after.get(ActionClass)
+      beforeChain: meta.beforeFiltersCache,
+      afterChain: meta.afterFiltersCache
     };
   }
 
-  /**
-   * Invokes the filters in the supplied chain in sequence.
-   */
-  private async _invokeFilters(chain: string[], params: any, haltable: boolean): Promise<void> {
-    chain = chain.slice(0);
-    let ActionClass = <typeof Action>this.constructor;
-    while (chain.length > 0) {
-      let filterName = chain.shift();
-      let filter = this[filterName];
-      let instrumentation = Instrumentation.instrument('action.filter', {
-        action: ActionClass.name,
-        params,
-        filter: filterName,
-        headers: this.request.headers
-      });
-      debug(`[${ this.request.id }]: running \`${ filterName }\` filter`);
-      let filterResult = await filter.call(this, params);
-      if (haltable && filterResult != null) {
-        debug(`[${ this.request.id }]: \`${ filterName }\` preempted the action, rendering the returned value`);
-        let response = await this.render(filterResult);
-        throw new PreemptiveRender(response);
-      }
-      instrumentation.finish();
-    }
-  }
-
 }
-
-export default Action;

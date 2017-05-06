@@ -30,14 +30,14 @@ export default class InstrumentationEvent {
   /**
    * Subscribe to be notified when a particular instrumentation block completes.
    */
-  public static subscribe(eventName: string, callback: (event: InstrumentationEvent) => void) {
+  static subscribe(eventName: string, callback: (event: InstrumentationEvent) => void) {
     this._emitter.on(eventName, callback);
   }
 
   /**
    * Unsubscribe from being notified when a particular instrumentation block completes.
    */
-  public static unsubscribe(eventName: string, callback?: (event: InstrumentationEvent) => void) {
+  static unsubscribe(eventName: string, callback?: (event: InstrumentationEvent) => void) {
     this._emitter.removeListener(eventName, callback);
   }
 
@@ -47,31 +47,31 @@ export default class InstrumentationEvent {
    * return value of the supplied function. Fires an event with the given event name and event data
    * (the function result is provided as well).
    */
-  public static instrument(eventName: string, data: any): InstrumentationEvent {
+  static instrument(eventName: string, data: any): InstrumentationEvent {
     return new InstrumentationEvent(eventName, data);
   }
 
   /**
    * Emit an InstrumentationEvent to subscribers
    */
-  public static emit(eventName: string, event: InstrumentationEvent): void {
+  static emit(eventName: string, event: InstrumentationEvent): void {
     this._emitter.emit(eventName, event);
   }
 
   /**
    * The name of this instrumentation even
    */
-  public eventName: string;
+  eventName: string;
 
   /**
    * The duration of the instrumentation event (calculated after calling `.finish()`)
    */
-  public duration: number;
+  duration: number;
 
   /**
    * Additional data supplied for this event, either at the start or finish of the event.
    */
-  public data: any;
+  data: any;
 
   /**
    * High resolution start time of this event
@@ -88,7 +88,7 @@ export default class InstrumentationEvent {
    * Finish this event. Records the duration, and fires an event to any subscribers. Any data
    * provided here is merged with any previously provided data.
    */
-  public finish(data?: any): void {
+  finish(data?: any): void {
     this.duration = process.hrtime(this.startTime)[1];
     this.data = merge({}, this.data, data);
     InstrumentationEvent.emit(this.eventName, this);

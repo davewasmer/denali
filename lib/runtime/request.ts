@@ -1,7 +1,5 @@
 import {
-  dropRight,
-  uniq,
-  isArray
+  dropRight
 } from 'lodash';
 import * as accepts from 'accepts';
 import typeis from 'type-is';
@@ -34,7 +32,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public id: string;
+  id: string;
 
   /**
    * The parsed URL of the IncomingMessage
@@ -51,38 +49,38 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public route: Route;
+  route: Route;
 
   /**
    * The requests params extracted from the route parser (i.e. just the URL segement params)
    *
    * @since 0.1.0
    */
-  public params: any;
+  params: any;
 
   /**
    * baseUrl of the app, needed to simulate Express request api
    *
    * @since 0.1.0
    */
-  public baseUrl = '/';
+  baseUrl = '/';
 
   /**
    * Url of the request -> can be modified
    *
    * @since 0.1.0
    */
-  public url: string;
+  url: string;
 
   /**
    * The incoming request body, buffered and parsed by the serializer (if applicable)
    *
    * @since 0.1.0
    */
-  public get body(): object {
+  get body(): any {
     return (<any>this._incomingMessage).body;
   }
-  public set body(value) {
+  set body(value) {
     (<any>this._incomingMessage).body = value;
   }
 
@@ -90,7 +88,7 @@ export default class Request extends DenaliObject {
    * The name of the original action that was invoked for this request. Used when an error occurs
    * so the error action can see the original action that was invoked.
    */
-  public _originalAction: string;
+  _originalAction: string;
 
   constructor(incomingMessage: http.IncomingMessage) {
     super();
@@ -105,7 +103,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get method(): Method {
+  get method(): Method {
     return <Method>this._incomingMessage.method.toLowerCase();
   }
 
@@ -114,7 +112,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get hostname(): string {
+  get hostname(): string {
     let host = this._incomingMessage.headers.Host;
     return (host || '').split(':')[0];
   }
@@ -124,7 +122,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get ip(): string {
+  get ip(): string {
     return this._incomingMessage.socket.remoteAddress;
   }
 
@@ -138,7 +136,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get originalUrl(): string {
+  get originalUrl(): string {
     return this.parsedUrl.pathname;
   }
 
@@ -147,7 +145,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get path(): string {
+  get path(): string {
     return this.parsedUrl.pathname;
   }
 
@@ -156,7 +154,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get protocol(): string {
+  get protocol(): string {
     return this.parsedUrl.protocol.toLowerCase();
   }
 
@@ -165,7 +163,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get query(): { [key: string]: string } {
+  get query(): { [key: string]: string } {
     return this.parsedUrl.query;
   }
 
@@ -174,7 +172,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get secure(): boolean {
+  get secure(): boolean {
     return this.protocol === 'https';
   }
 
@@ -183,7 +181,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get xhr(): boolean {
+  get xhr(): boolean {
     return this.get('x-requested-with') === 'XMLHttpRequest';
   }
 
@@ -192,7 +190,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get headers(): { [key: string]: string } {
+  get headers(): { [key: string]: string } {
     return this._incomingMessage.headers;
   }
 
@@ -203,7 +201,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get subdomains(): string[] {
+  get subdomains(): string[] {
     // Drop the tld and root domain name
     return dropRight(this.hostname.split('.'), 2);
   }
@@ -214,7 +212,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public accepts(serverAcceptedTypes: string[]): string | boolean {
+  accepts(serverAcceptedTypes: string[]): string | boolean {
     return accepts(this._incomingMessage).type(serverAcceptedTypes);
   }
 
@@ -223,7 +221,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get(header: string): string {
+  get(header: string): string {
     return this._incomingMessage.headers[header.toLowerCase()];
   }
 
@@ -232,7 +230,7 @@ export default class Request extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public is(...types: string[]): string | boolean {
+  is(...types: string[]): string | boolean {
     return <string|boolean>typeis(this._incomingMessage, types);
   }
 

@@ -1,7 +1,4 @@
-import {
-  merge
-} from 'lodash';
-import { ui, Command, Project, Blueprint } from 'denali-cli';
+import { Command, Blueprint } from 'denali-cli';
 import unwrap from '../lib/utils/unwrap';
 import * as yargs from 'yargs';
 
@@ -13,9 +10,9 @@ import * as yargs from 'yargs';
 export default class GenerateCommand extends Command {
 
   /* tslint:disable:completed-docs typedef */
-  public static commandName = 'generate';
-  public static description = 'Scaffold code for your app.';
-  public static longDescription = unwrap`
+  static commandName = 'generate';
+  static description = 'Scaffold code for your app.';
+  static longDescription = unwrap`
     Usage: denali generate <blueprint> [options]
 
     Generates code from the given blueprint. Blueprints are templates used by the
@@ -23,9 +20,9 @@ export default class GenerateCommand extends Command {
     addons).
   `;
 
-  public static params = '<blueprint>';
+  static params = '<blueprint>';
 
-  public static flags = {
+  static flags = {
     skipPostInstall: {
       description: "Don't run any post install hooks for the blueprint",
       default: false,

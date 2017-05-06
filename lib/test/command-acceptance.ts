@@ -23,18 +23,18 @@ export default class CommandAcceptanceTest extends DenaliObject {
   /**
    * The command to invoke, i.e. 'build' would test the invocation of '$ denali build'
    */
-  public command: string;
+  command: string;
 
   /**
    * The test directory generated to test this command. If it's not provided to the constructor,
    * Denali will create a tmp directory inside the 'tmp' directory in your project root.
    */
-  public dir: string;
+  dir: string;
 
   /**
    * The default NODE_ENV to invoke the command with. Defaults to development.
    */
-  public environment: string;
+  environment: string;
 
   /**
    * The root directory of the project under test.
@@ -99,7 +99,7 @@ export default class CommandAcceptanceTest extends DenaliObject {
   /**
    * Copy the dummy app into our test directory
    */
-  public populateWithDummy(): void {
+  populateWithDummy(): void {
     debug(`populating tmp directory for "${ this.command }" command with dummy app`);
     let dummy = path.join(this.projectRoot, 'test', 'dummy');
     let tmpNodeModules = path.join(this.dir, 'node_modules');
@@ -122,7 +122,7 @@ export default class CommandAcceptanceTest extends DenaliObject {
    *
    * @param options.failOnStderr Should any output to stderr result in a rejected promise?
    */
-  public async run(options: { failOnStderr?: boolean, env?: any } = {}): Promise<{ stdout: string, stderr: string, dir: string }> {
+  async run(options: { failOnStderr?: boolean, env?: any } = {}): Promise<{ stdout: string, stderr: string, dir: string }> {
     return new Promise<{ stdout: string, stderr: string, dir: string }>((resolve, reject) => {
       exec(`${ this.denaliPath } ${ this.command }`, {
         env: Object.assign({}, process.env, {
@@ -160,12 +160,12 @@ export default class CommandAcceptanceTest extends DenaliObject {
    * @param options.checkOutput A function invoked with the stdout and stderr buffers of the invoked
    *                            command, and should return true if the output passes
    */
-  public async spawn(options: {
-    checkOutput(stdout: string, stderr: string, dir: string): boolean,
+  async spawn(options: {
     failOnStderr?: boolean,
     env?: any,
     pollInterval?: number,
-    timeout?: number
+    timeout?: number,
+    checkOutput(stdout: string, stderr: string, dir: string): boolean
   }): Promise<void> {
     return <any>new Promise((resolve, reject) => {
 

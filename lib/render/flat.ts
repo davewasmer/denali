@@ -5,11 +5,10 @@ import {
   forEach,
   isUndefined } from 'lodash';
 import * as assert from 'assert';
-import { singularize } from 'inflection';
-import Serializer from '../serializer';
-import Model from '../model';
-import Response from '../../runtime/response';
-import { HasManyRelationship, RelationshipDescriptor } from '../descriptors';
+import Serializer from './serializer';
+import Model from '../data/model';
+import Action, { RenderOptions } from '../runtime/action';
+import { RelationshipDescriptor } from '../data/descriptors';
 
 /**
  * Renders the payload as a flat JSON object or array at the top level. Related
@@ -17,22 +16,21 @@ import { HasManyRelationship, RelationshipDescriptor } from '../descriptors';
  *
  * @package data
  */
-export default class FlatSerializer extends Serializer {
+export default abstract class FlatSerializer extends Serializer {
 
   /**
    * The default content type to apply to responses formatted by this serializer
    */
-  public contentType = 'application/json';
+  contentType = 'application/json';
 
   /**
    * Renders the payload, either a primary data model(s) or an error payload.
    */
-  public async serialize(response: Response, options: any = {}): Promise<void> {
-    if (response.body instanceof Error) {
-      response.body = this.renderError(response.body);
+  async serialize(action: Action, body: any, options: RenderOptions = {}): Promise<any> {
+    if (body instanceof Error) {
+      return this.renderError(body);
     }
-    response.body = this.renderPrimary(response.body, options);
-    response.contentType = this.contentType;
+    return this.renderPrimary(body, options);
   }
 
   /**
@@ -50,7 +48,7 @@ export default class FlatSerializer extends Serializer {
   /**
    * Renders an individual model
    */
-  public renderModel(model: Model, options?: any): any {
+  renderModel(model: Model, options?: any): any {
     let id = model.id;
     let attributes = this.serializeAttributes(model, options);
     let relationships = this.serializeRelationships(model, options);

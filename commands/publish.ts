@@ -1,7 +1,7 @@
 import * as path from 'path';
 import unwrap from '../lib/utils/unwrap';
 import * as Bluebird from 'bluebird';
-import { ui, spinner, Command, Project } from 'denali-cli';
+import { spinner, Command } from 'denali-cli';
 import { exec, ExecOptions } from 'child_process';
 
 const run = Bluebird.promisify<[ string, string ], string, ExecOptions>(exec);
@@ -14,15 +14,15 @@ const run = Bluebird.promisify<[ string, string ], string, ExecOptions>(exec);
 export default class PublishCommand extends Command {
 
   /* tslint:disable:completed-docs typedef */
-  public static commandName = 'publish';
-  public static description = 'Publish an addon to the npm registry.';
-  public static longDescription = unwrap`
+  static commandName = 'publish';
+  static description = 'Publish an addon to the npm registry.';
+  static longDescription = unwrap`
     Publishes an addon to the npm registry. Runs tests builds the
     addon, and publishes the dist/ directory to the registry.`;
 
-  public static runsInApp = true;
+  static runsInApp = true;
 
-  public static flags = {
+  static flags = {
     skipTests: {
       description: 'Do not run tests before publishing',
       default: false,
@@ -30,7 +30,7 @@ export default class PublishCommand extends Command {
     }
   };
 
-  public async run(argv: any) {
+  async run(argv: any) {
     await this.build();
     if (!argv.skipTests) {
       await this.runTests();

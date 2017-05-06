@@ -1,27 +1,9 @@
-import {
-  forEach,
-  omit,
-  noop
- } from 'lodash';
-import * as path from 'path';
-import * as fs from 'fs-extra';
-import * as glob from 'glob';
 import findup = require('findup-sync');
-import eachDir from '../utils/each-dir';
-import { sync as isDirectory } from 'is-directory';
-import requireDir from '../utils/require-dir';
 import * as tryRequire from 'try-require';
-import * as stripExtension from 'strip-extension';
-import { singularize } from 'inflection';
-import * as createDebug from 'debug';
 import DenaliObject from '../metal/object';
 import Container from '../metal/container';
-import Logger from './logger';
-import Router from './router';
 import Application from './application';
 import Resolver from '../metal/resolver';
-
-const debug = createDebug('denali:runtime:addon');
 
 /**
  * Constructor options for Addon class
@@ -75,35 +57,35 @@ export default class Addon extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public environment: string;
+  environment: string;
 
   /**
    * The root directory on the filesystem for this addon
    *
    * @since 0.1.0
    */
-  public dir: string;
+  dir: string;
 
   /**
    * The package.json for this addon
    *
    * @since 0.1.0
    */
-  public pkg: any;
+  pkg: any;
 
   /**
    * The resolver instance to use with this addon.
    *
    * @since 0.1.0
    */
-  public resolver: Resolver;
+  resolver: Resolver;
 
   /**
    * The consuming application container instance
    *
    * @since 0.1.0
    */
-  public container: Container;
+  container: Container;
 
   constructor(options: AddonOptions) {
     super();
@@ -123,7 +105,7 @@ export default class Addon extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public get name(): string {
+  get name(): string {
     return (this.pkg && this.pkg.name) || 'anonymous-addon';
   }
 
@@ -133,7 +115,7 @@ export default class Addon extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public async shutdown(application: Application): Promise<void> {
+  async shutdown(application: Application): Promise<void> {
     // defaults to noop
   }
 

@@ -21,19 +21,19 @@ export default class Logger extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public loglevel: LogLevel = 'info';
+  loglevel: LogLevel = 'info';
 
   /**
    * Specify if logs should be colorized.
    *
    * @since 0.1.0
    */
-  public colorize = true;
+  colorize = true;
 
   /**
    * Available log levels that can be used.
    */
-  public levels: LogLevel[] = [
+  levels: LogLevel[] = [
     'info',
     'warn',
     'error'
@@ -42,7 +42,7 @@ export default class Logger extends DenaliObject {
   /**
    * Color map for the available levels.
    */
-  public colors: { [level: string]: chalk.ChalkChain } = {
+  colors: { [level: string]: chalk.ChalkChain } = {
     info: chalk.white,
     warn: chalk.yellow,
     error: chalk.red
@@ -53,7 +53,7 @@ export default class Logger extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public info(msg: any): void {
+  info(msg: any): void {
     this.log('info', msg);
   }
 
@@ -62,7 +62,7 @@ export default class Logger extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public warn(msg: any): void {
+  warn(msg: any): void {
     this.log('warn', msg);
   }
 
@@ -71,14 +71,14 @@ export default class Logger extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public error(msg: any): void {
+  error(msg: any): void {
     this.log('error', msg);
   }
 
   /**
    * Log a message to the logger at a specific log level.
    */
-  public log(level: LogLevel, msg: any): void {
+  log(level: LogLevel, msg: any): void {
     if (this.levels.indexOf(level) === -1) {
       level = this.loglevel;
     }

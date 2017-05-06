@@ -1,8 +1,4 @@
 import * as dedent from 'dedent-js';
-import {
-  flatten,
-  zip
-} from 'lodash';
 
 /**
  * Take the tagged string and remove indentation and word-wrapping.

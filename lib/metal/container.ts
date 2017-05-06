@@ -1,7 +1,5 @@
 import {
   defaults,
-  camelCase,
-  omitBy,
   forEach,
   forOwn,
   uniq,
@@ -76,7 +74,7 @@ export default class Container {
    * to find the member wins. Normally, each addon will supply it's own resolver, allowing for
    * addon order and precedence when looking up container entries.
    */
-  private resolvers: Resolver[];
+  private resolvers: Resolver[] = [];
 
   /**
    * Internal cache of lookup values
@@ -96,13 +94,23 @@ export default class Container {
   /**
    * Options for container entries. Keyed on specifier or type. See ContainerOptions.
    */
-  private options: Dict<ContainerOptions> = {};
+  private options: Dict<ContainerOptions> = {
+    action: { singleton: false, instantiate: true },
+    config: { singleton: true, instantiate: false },
+    serializer: { singleton: true, instantiate: true },
+    service: { singleton: true, instantiate: true }
+  };
 
   /**
    * Internal cache of injections per class, so we can avoid redoing expensive for..in loops on,
    * every instance, and instead do a fast Object.assign
    */
   private injectionsCache: Map<any, Dict<any>> = new Map();
+
+  /**
+   * Internal metadata store. See `metaFor()`
+   */
+  private meta: Map<any, Dict<any>> = new Map();
 
   /**
    * Create a new container with a base (highest precedence) resolver at the given directory.
@@ -127,7 +135,7 @@ export default class Container {
     if (options) {
       forOwn(options, (value, key: keyof ContainerOptions) => {
         this.setOption(specifier, key, value);
-      })
+      });
     }
   }
 
@@ -149,7 +157,7 @@ export default class Container {
             if (klass) {
               return false;
             }
-          })
+          });
         }
 
         if (klass) {
@@ -173,7 +181,7 @@ export default class Container {
    * Lookup the given specifier in the container. If options.loose is true, failed lookups will
    * return undefined rather than throw.
    */
-  lookup<T = any>(specifier: string, options: { loose?: boolean } = {}): T | Constructor<T> {
+  lookup<T = any>(specifier: string, options: { loose?: boolean } = {}): T {
     let singleton = this.getOption(specifier, 'singleton') !== false;
 
     if (singleton) {
@@ -187,7 +195,7 @@ export default class Container {
     if (!factory) { return; }
 
     if (this.getOption(specifier, 'instantiate') === false) {
-      return factory.class;
+      return (<any>factory).class;
     }
 
     let instance = factory.create();
@@ -221,7 +229,7 @@ export default class Container {
     let resolved = this.resolvers.reduce((entries, resolver) => {
       return entries.concat(resolver.availableForType(type));
     }, []);
-    return uniq(registrations.concat(resolved));
+    return uniq(registrations.concat(resolved)).map((specifier) => specifier.split(':')[1]);
   }
 
   /**
@@ -242,6 +250,20 @@ export default class Container {
       this.options[specifier] = { singleton: false, instantiate: false };
     }
     this.options[specifier][optionName] = value;
+  }
+
+  /**
+   * Allow consumers to store metadata on the container. This is useful if you want to store data
+   * tied to the lifetime of the container. For example, you may have an expensive calculation that
+   * you can cache once per class. Rather than storing that cached value on `this.constructor`,
+   * which is shared across containers, you can store it on `container.metaFor(this.constructor)`,
+   * ensuring that your container doesn't pollute others.
+   */
+  metaFor(key: any) {
+    if (!this.meta.has(key)) {
+      this.meta.set(key, {});
+    }
+    return this.meta.get(key);
   }
 
   /**
@@ -284,9 +306,10 @@ export default class Container {
       class: klass,
       create(...args: any[]) {
         let instance = new klass(...args);
+        (<any>instance).container = container;
         container.applyInjections(instance);
         return instance;
       }
-    }
+    };
   }
 }

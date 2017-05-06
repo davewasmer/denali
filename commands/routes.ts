@@ -11,16 +11,16 @@ import Application from '../lib/runtime/application';
 export default class RoutesCommand extends Command {
 
   /* tslint:disable:completed-docs typedef */
-  public static commandName = 'routes';
-  public static description = 'Display all defined routes within your application.';
-  public static longDescription = unwrap`
+  static commandName = 'routes';
+  static description = 'Display all defined routes within your application.';
+  static longDescription = unwrap`
     Displays routes from your application and any routes added by addons.
     Display shows the method, endpoint, and the action associated to that
     route.`;
 
-  public static runsInApp = true;
+  static runsInApp = true;
 
-  public static flags = {
+  static flags = {
     environment: {
       description: 'The target environment to build for.',
       default: process.env.NODE_ENV || 'development',
@@ -33,7 +33,7 @@ export default class RoutesCommand extends Command {
     }
   };
 
-  public async run(argv: any) {
+  async run(argv: any) {
     let project = new Project({
       environment: argv.environment,
       printSlowTrees: argv.printSlowTrees,

@@ -4,7 +4,6 @@ import {
   assign,
   forEach
 } from 'lodash';
-import { IncomingMessage } from 'http';
 import MockRequest from './mock-request';
 import MockResponse from './mock-response';
 import DenaliObject from '../metal/object';
@@ -24,14 +23,30 @@ export class AppAcceptance extends DenaliObject {
   /**
    * The application instance under test
    */
-  public application: Application;
+  application: Application;
+
+  /**
+   * Default headers that are applied to each request. Useful for handling API-wide content-types,
+   * sessions, etc.
+   *
+   * @since 0.1.0
+   */
+  headers: { [name: string]: string } = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json'
+  };
+
+  /**
+   * An internal registry of container injections.
+   */
+  protected _injections: { [fullName: string]: any } = {};
 
   constructor() {
     super();
     let compiledPath = process.cwd();
     let ApplicationClass: typeof Application = require(path.join(compiledPath, 'app/application')).default;
     let environment = process.env.NODE_ENV || 'test';
-    this.application = new Application({
+    this.application = new ApplicationClass({
       environment,
       dir: compiledPath,
       addons: <string[]>[]
@@ -44,32 +59,16 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public async start(): Promise<void> {
+  async start(): Promise<void> {
     await this.application.runInitializers();
   }
-
-  /**
-   * An internal registry of container injections.
-   */
-  protected _injections: { [fullName: string]: any } = {};
-
-  /**
-   * Default headers that are applied to each request. Useful for handling API-wide content-types,
-   * sessions, etc.
-   *
-   * @since 0.1.0
-   */
-  public headers: { [name: string]: string } = {
-    Accept: 'application/json',
-    'Content-Type': 'application/json'
-  };
 
   /**
    * Submit a simulated HTTP request to the application.
    *
    * @since 0.1.0
    */
-  public async request(options: { method: string, url: string, body?: any, headers?: { [key: string]: string } }): Promise<{ status: number, body: any }> {
+  async request(options: { method: string, url: string, body?: any, headers?: { [key: string]: string } }): Promise<{ status: number, body: any }> {
     let body: any = null;
     if (options.body) {
       body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
@@ -114,7 +113,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public async get(url: string, options = {}): Promise<{ status: number, body: any }> {
+  async get(url: string, options = {}): Promise<{ status: number, body: any }> {
     return this.request(Object.assign(options, { url, method: 'get' }));
   }
   /**
@@ -122,7 +121,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public async head(url: string, options = {}): Promise<{ status: number, body: any }> {
+  async head(url: string, options = {}): Promise<{ status: number, body: any }> {
     return this.request(Object.assign(options, { url, method: 'head' }));
   }
   /**
@@ -130,7 +129,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public async delete(url: string, options = {}): Promise<{ status: number, body: any }> {
+  async delete(url: string, options = {}): Promise<{ status: number, body: any }> {
     return this.request(Object.assign(options, { url, method: 'delete' }));
   }
   /**
@@ -138,7 +137,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public async post(url: string, body: any, options = {}): Promise<{ status: number, body: any }> {
+  async post(url: string, body: any, options = {}): Promise<{ status: number, body: any }> {
     return this.request(Object.assign(options, { url, body, method: 'post' }));
   }
   /**
@@ -146,7 +145,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public async put(url: string, body: any, options = {}): Promise<{ status: number, body: any }> {
+  async put(url: string, body: any, options = {}): Promise<{ status: number, body: any }> {
     return this.request(Object.assign(options, { url, body, method: 'put' }));
   }
   /**
@@ -154,7 +153,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public async patch(url: string, body: string, options = {}): Promise<{ status: number, body: any }> {
+  async patch(url: string, body: string, options = {}): Promise<{ status: number, body: any }> {
     return this.request(Object.assign(options, { url, body, method: 'patch' }));
   }
 
@@ -163,7 +162,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public getHeader(name: string): string {
+  getHeader(name: string): string {
     return this.headers[name];
   }
 
@@ -172,7 +171,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public setHeader(name: string, value: string): void {
+  setHeader(name: string, value: string): void {
     this.headers[name] = value;
   }
 
@@ -181,7 +180,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public removeHeader(name: string): void {
+  removeHeader(name: string): void {
     delete this.headers[name];
   }
 
@@ -190,7 +189,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public lookup(name: string): any {
+  lookup(name: string): any {
     return this.application.container.lookup(name);
   }
 
@@ -200,7 +199,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public inject(name: string, value: any): void {
+  inject(name: string, value: any): void {
     this._injections[name] = this.application.container.lookup(name);
     this.application.container.register(name, value);
   }
@@ -210,7 +209,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public restore(name: string): void {
+  restore(name: string): void {
     this.application.container.register(name, this._injections[name]);
     delete this._injections[name];
   }
@@ -220,7 +219,7 @@ export class AppAcceptance extends DenaliObject {
    *
    * @since 0.1.0
    */
-  public async shutdown(): Promise<void> {
+  async shutdown(): Promise<void> {
     await this.application.shutdown();
   }
 

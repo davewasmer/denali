@@ -1,7 +1,7 @@
 import unwrap from '../lib/utils/unwrap';
 import * as Bluebird from 'bluebird';
 import * as cmdExists from 'command-exists';
-import { ui, spinner, Command, Project, Blueprint } from 'denali-cli';
+import { ui, spinner, Command, Blueprint } from 'denali-cli';
 import { execSync as run } from 'child_process';
 
 const commandExists = Bluebird.promisify<boolean, string>(cmdExists);
@@ -14,17 +14,17 @@ const commandExists = Bluebird.promisify<boolean, string>(cmdExists);
 export default class InstallCommand extends Command {
 
   /* tslint:disable:completed-docs typedef */
-  public static commandName = 'install';
-  public static description = 'Install an addon in your app.';
-  public static longDescription = unwrap`
+  static commandName = 'install';
+  static description = 'Install an addon in your app.';
+  static longDescription = unwrap`
     Installs the supplied addon in the project. Essentially a shortcut for \`npm install --save
     <addon>\`, with sanity checking that the project actually is a Denali addon.`;
 
-  public static runsInApp = true;
+  static runsInApp = true;
 
-  public static params = '<addonName>';
+  static params = '<addonName>';
 
-  public async run(argv: any) {
+  async run(argv: any) {
     try {
       await this.installAddon(argv.addonName);
     } catch (err) {
@@ -32,7 +32,7 @@ export default class InstallCommand extends Command {
     }
   }
 
-  public async installAddon(addonName: string) {
+  async installAddon(addonName: string) {
     // Find the package info first to confirm it exists and is a denali addon
     let pkgManager = await commandExists('yarn') ? 'yarn' : 'npm';
     await spinner.start(`Searching for "${ addonName }" addon ...`);

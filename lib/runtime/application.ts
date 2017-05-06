@@ -7,7 +7,7 @@ import * as path from 'path';
 import * as http from 'http';
 import * as https from 'https';
 import { each, all } from 'bluebird';
-import Addon, { AddonOptions } from './addon';
+import Addon from './addon';
 import topsort from '../utils/topsort';
 import Router from './router';
 import Logger from './logger';
@@ -41,9 +41,9 @@ export interface ApplicationOptions {
  */
 export interface Initializer {
   name: string;
-  initialize(application: Application): Promise<any>;
   before?: string | string[];
   after?: string | string[];
+  initialize(application: Application): Promise<any>;
 }
 
 /**
@@ -57,21 +57,21 @@ export default class Application extends Addon {
   /**
    * The Router instance for this Application.
    */
-  public router: Router;
+  router: Router;
 
   /**
    * The application config
    *
    * @since 0.1.0
    */
-  public config: any;
+  config: any;
 
   /**
    * The container instance for the entire application
    *
    * @since 0.1.0
    */
-  public container: Container;
+  container: Container;
 
   /**
    * Track servers that need to drain before application shutdown
@@ -83,14 +83,14 @@ export default class Application extends Addon {
    *
    * @since 0.1.0
    */
-  public logger: Logger;
+  logger: Logger;
 
   /**
    * List of child addons for this app (one-level deep only, i.e. no addons-of-addons are included)
    *
    * @since 0.1.0
    */
-  public addons: Addon[];
+  addons: Addon[];
 
   constructor(options: ApplicationOptions) {
     let container = new Container(options.dir);
@@ -201,7 +201,7 @@ export default class Application extends Addon {
    *
    * @since 0.1.0
    */
-  public async start(): Promise<void> {
+  async start(): Promise<void> {
     let port = this.config.server.port || 3000;
     try {
       await this.runInitializers();
@@ -232,7 +232,7 @@ export default class Application extends Addon {
         await new Promise((resolveDrainer) => {
           server.close(resolveDrainer);
           setTimeout(resolveDrainer, 60 * 1000);
-        })
+        });
       });
     });
   }
@@ -244,7 +244,7 @@ export default class Application extends Addon {
    *
    * @since 0.1.0
    */
-  public async runInitializers(): Promise<void> {
+  async runInitializers(): Promise<void> {
     let initializers = <Initializer[]>topsort(<Vertex[]>values(this.container.lookupAll('initializer')));
     await each(initializers, async (initializer: Initializer) => {
       await initializer.initialize(this);
@@ -257,7 +257,7 @@ export default class Application extends Addon {
    *
    * @since 0.1.0
    */
-  public async shutdown(): Promise<void> {
+  async shutdown(): Promise<void> {
     await all(this.drainers.map((drainer) => drainer()));
     await all(this.addons.map(async (addon) => {
       await addon.shutdown(this);

@@ -13,57 +13,57 @@ import { RelationshipDescriptor } from './descriptors';
 abstract class ORMAdapter extends DenaliObject {
 
   /**
-   * ORM Adapters should be singletons
+   * The current test transaction, if applicable
    */
-  static singleton = true;
+  testTransaction: any;
 
   /**
    * Find a record by id.
    */
-  public abstract async find(type: string, id: any, options: any): Promise<any>;
+  abstract async find(type: string, id: any, options: any): Promise<any>;
 
   /**
    * Find a single record that matches the given query.
    */
-  public abstract async findOne(type: string, query: any, options: any): Promise<any>;
+  abstract async findOne(type: string, query: any, options: any): Promise<any>;
 
   /**
    * Find all records of this type.
    */
-  public abstract async all(type: string, options: any): Promise<any[]>;
+  abstract async all(type: string, options: any): Promise<any[]>;
 
   /**
    * Find all records that match the given query.
    */
-  public abstract async query(type: string, query: any, options: any): Promise<any[]>;
+  abstract async query(type: string, query: any, options: any): Promise<any[]>;
 
   /**
    * Return the id for the given model.
    */
-  public abstract idFor(model: Model): any;
+  abstract idFor(model: Model): any;
 
   /**
    * Set the id for the given model.
    */
-  public abstract setId(model: Model, value: any): void;
+  abstract setId(model: Model, value: any): void;
 
   /**
    * Build an internal record instance of the given type with the given data. Note that this method
    * should return the internal, ORM representation of the record, not a Denali Model.
    */
-  public abstract buildRecord(type: string, data: any, options: any): any;
+  abstract buildRecord(type: string, data: any, options: any): any;
 
   /**
    * Return the value for the given attribute on the given record.
    */
-  public abstract getAttribute(model: Model, attribute: string): any;
+  abstract getAttribute(model: Model, attribute: string): any;
 
   /**
    * Set the value for the given attribute on the given record.
    *
    * @returns returns true if set operation was successful
    */
-  public abstract setAttribute(model: Model, attribute: string, value: any): boolean;
+  abstract setAttribute(model: Model, attribute: string, value: any): boolean;
 
   /**
    * Delete the value for the given attribute on the given record. The semantics of this may behave
@@ -73,7 +73,7 @@ abstract class ORMAdapter extends DenaliObject {
    *
    * @returns returns true if delete operation was successful
    */
-  public abstract deleteAttribute(model: Model, attribute: string): boolean;
+  abstract deleteAttribute(model: Model, attribute: string): boolean;
 
   /**
    * Return the related record(s) for the given relationship.
@@ -83,7 +83,7 @@ abstract class ORMAdapter extends DenaliObject {
    * @param descriptor The RelationshipDescriptor of the relationship being fetch
    * @param query An optional query to filter the related records by
    */
-  public abstract async getRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, query: any, options: any): Promise<any|any[]>;
+  abstract async getRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, query: any, options: any): Promise<any|any[]>;
 
   /**
    * Set the related record(s) for the given relationship. Note: for has-many relationships, the
@@ -97,7 +97,7 @@ abstract class ORMAdapter extends DenaliObject {
    * @param descriptor The RelationshipDescriptor of the relationship being altered
    * @param related The related record(s) that should be linked to the given relationship
    */
-  public abstract async setRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, related: any, options: any): Promise<void>;
+  abstract async setRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, related: any, options: any): Promise<void>;
 
   /**
    * Add related record(s) to a hasMany relationship. Existing related records should remain
@@ -108,7 +108,7 @@ abstract class ORMAdapter extends DenaliObject {
    * @param descriptor The RelationshipDescriptor of the relationship being altered
    * @param related The related record(s) that should be linked to the given relationship
    */
-  public abstract async addRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, related: Model|Model[], options: any): Promise<void>;
+  abstract async addRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, related: Model|Model[], options: any): Promise<void>;
 
   /**
    * Remove related record(s) from a hasMany relationship. Note: The removed related records should
@@ -122,30 +122,25 @@ abstract class ORMAdapter extends DenaliObject {
    * @param related The related record(s) that should be removed from the relationship; if not
    *                provided, then all related records should be removed
    */
-  public abstract async removeRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, related: Model|Model[]|null, options: any): Promise<void>;
+  abstract async removeRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, related: Model|Model[]|null, options: any): Promise<void>;
 
   /**
    * Persist the supplied model.
    */
-  public abstract async saveRecord(model: Model, options: any): Promise<void>;
+  abstract async saveRecord(model: Model, options: any): Promise<void>;
 
   /**
    * Delete the supplied model from the persistent data store.
    */
-  public abstract async deleteRecord(model: Model, options: any): Promise<void>;
+  abstract async deleteRecord(model: Model, options: any): Promise<void>;
 
   /**
    * Takes an array of Denali Models and defines an ORM specific model class, and/or any other ORM
    * specific setup that might be required for that Model.
    */
-  public async defineModels(models: typeof Model[]): Promise<void> {
+  async defineModels(models: typeof Model[]): Promise<void> {
     // defaults to no-op
   };
-
-  /**
-   * The current test transaction, if applicable
-   */
-  public testTransaction: any;
 
   /**
    * Start a transaction that will wrap a test, and be rolled back afterwards. If the data store
@@ -153,12 +148,12 @@ abstract class ORMAdapter extends DenaliObject {
    * per process, and the ORM adapter is responsible for keeping track of that transaction so it
    * can later be rolled back.
    */
-  public async startTestTransaction?(): Promise<void>;
+  async startTestTransaction?(): Promise<void>;
 
   /**
    * Roll back the test transaction.
    */
-  public async rollbackTestTransaction?(): Promise<void>;
+  async rollbackTestTransaction?(): Promise<void>;
 
 }
 

@@ -1,11 +1,9 @@
 import {
   camelCase,
-  upperFirst,
-  omitBy
+  upperFirst
 } from 'lodash';
 import * as path from 'path';
 import * as fs from 'fs';
-import { ContainerOptions } from './container';
 import * as tryRequire from 'try-require';
 import { pluralize } from 'inflection';
 import requireDir from '../utils/require-dir';
@@ -43,7 +41,7 @@ export default class Resolver {
    * Manually add a member to this resolver. Manually registered members take precedence over any
    * retrieved from the filesystem.
    */
-  public register(specifier: string, value: any) {
+  register(specifier: string, value: any) {
     assert(specifier.includes(':'), 'Container specifiers must be in "type:entry" format');
     this.registry.set(specifier, value);
   }
@@ -53,7 +51,7 @@ export default class Resolver {
    * members, then falls back to type specific retrieve methods that typically find the matching
    * file on the filesystem.
    */
-  public retrieve(specifier: string) {
+  retrieve(specifier: string) {
     assert(specifier.includes(':'), 'Container specifiers must be in "type:entry" format');
     let [ type, entry ] = specifier.split(':');
     if (this.registry.has(specifier)) {
@@ -99,12 +97,12 @@ export default class Resolver {
    * Retrieve all the entries for a given type. First checks for all manual registrations matching
    * that type, then retrieves all members for that type (typically from the filesystem).
    */
-  public availableForType(type: string) {
+  availableForType(type: string) {
     let availableMethod = <AvailableForTypeMethod>this[`availableFor${ upperFirst(camelCase(type)) }`];
     if (!availableMethod) {
       availableMethod = this.availableForOther;
     }
-    let entries = <string[]>availableMethod.call(this, type)
+    let entries = <string[]>availableMethod.call(this, type);
     return entries.map((entry) => `${ type }:${ entry }`);
   }
 

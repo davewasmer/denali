@@ -13,13 +13,12 @@
     "indent": [ true, "spaces" ],
     "interface-over-type-literal": true,
     "jsdoc-format": true,
-    "member-access": true,
     "member-ordering": [ true, {
       "order": [
         "static-field",
         "static-method",
-        "constructor",
         "instance-field",
+        "constructor",
         "instance-method"
       ]
     } ],

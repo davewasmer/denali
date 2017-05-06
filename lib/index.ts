@@ -13,9 +13,18 @@
 import { attr, hasMany, hasOne, RelationshipDescriptor, Attribute } from './data/descriptors';
 import Model from './data/model';
 import ORMAdapter from './data/orm-adapter';
-import Serializer from './data/serializer';
-import FlatSerializer from './data/serializers/flat';
-import JSONAPISerializer from './data/serializers/json-api';
+
+// Render
+import Serializer from './render/serializer';
+import FlatSerializer from './render/flat';
+import RawSerializer from './render/raw';
+import JSONAPISerializer from './render/json-api';
+import View from './render/view';
+
+// Parse
+import Parser from './parse/parser';
+import FlatParser from './parse/flat';
+import JSONAPIParser from './parse/json-api';
 
 // Metal
 import Instrumentation from './metal/instrumentation';
@@ -32,7 +41,6 @@ import Application from './runtime/application';
 import Errors from './runtime/errors';
 import Logger from './runtime/logger';
 import Request from './runtime/request';
-import Response from './runtime/response';
 import Router from './runtime/router';
 import Service from './runtime/service';
 
@@ -44,6 +52,7 @@ import MockRequest from './test/mock-request';
 import MockResponse from './test/mock-response';
 
 export {
+  // Data
   attr,
   hasMany,
   hasOne,
@@ -51,9 +60,18 @@ export {
   Attribute,
   Model,
   ORMAdapter,
+
+  // Render
+  View,
   Serializer,
+  RawSerializer,
   FlatSerializer,
   JSONAPISerializer,
+
+  // Parse
+  Parser,
+  FlatParser,
+  JSONAPIParser,
 
   // Metal
   Instrumentation,
@@ -73,7 +91,6 @@ export {
   Errors,
   Logger,
   Request,
-  Response,
   Router,
   Service,
 

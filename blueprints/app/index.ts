@@ -21,9 +21,9 @@ const maxBuffer = 400 * ONE_KB;
 export default class AppBlueprint extends Blueprint {
 
   /* tslint:disable:completed-docs typedef */
-  public static blueprintName = 'app';
-  public static description = 'Creates a new app, initializes git and installs dependencies';
-  public static longDescription = unwrap`
+  static blueprintName = 'app';
+  static description = 'Creates a new app, initializes git and installs dependencies';
+  static longDescription = unwrap`
     Usage: denali generate app <name> [options]
 
     Scaffolds a new app. Sets up the correct directory structure, initializes a git repo, and
@@ -32,9 +32,9 @@ export default class AppBlueprint extends Blueprint {
     Guides: http://denalijs.org/master/guides/overview/app-structure/
   `;
 
-  public static params = '<name>';
+  static params = '<name>';
 
-  public static flags = {
+  static flags = {
     skipDeps: {
       description: 'Do not install dependencies on new app',
       defaultValue: false,
@@ -47,7 +47,7 @@ export default class AppBlueprint extends Blueprint {
     }
   };
 
-  public locals(argv: any) {
+  locals(argv: any) {
     let name = argv.name;
     return {
       name,
@@ -57,7 +57,7 @@ export default class AppBlueprint extends Blueprint {
     };
   }
 
-  public async postInstall(argv: any) {
+  async postInstall(argv: any) {
     let name = argv.name;
     if (!argv.skipDeps) {
       try {

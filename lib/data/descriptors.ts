@@ -10,12 +10,12 @@ export class Descriptor extends DenaliObject {
   /**
    * What kind of descriptor is this? Used by subclasses to differentiate easily between types.
    */
-  public type: string;
+  type: string;
 
   /**
    * Generic options object that can be used to supply Denali or ORM specific config options.
    */
-  public options: any;
+  options: any;
 
   /**
    * Creates an instance of Descriptor.
@@ -58,7 +58,7 @@ export class Attribute extends Descriptor {
   /**
    * Convenience flag for checking if this is an attribute
    */
-  public isAttribute = true;
+  isAttribute = true;
 
 }
 
@@ -102,12 +102,12 @@ export class HasManyRelationship extends Descriptor {
   /**
    * Convenience flag for checking if this is a relationship
    */
-  public isRelationship = true;
+  isRelationship = true;
 
   /**
    * Relationship mode, i.e. 1 -> 1 or 1 -> N
    */
-  public mode: 'hasMany' | 'hasOne' = 'hasMany';
+  mode: 'hasMany' | 'hasOne' = 'hasMany';
 
 }
 
@@ -150,12 +150,12 @@ export class HasOneRelationship extends Descriptor {
   /**
    * Convenience flag for checking if this is a relationship
    */
-  public isRelationship = true;
+  isRelationship = true;
 
   /**
    * Relationship mode, i.e. 1 -> 1 or 1 -> N
    */
-  public mode: 'hasMany' | 'hasOne' = 'hasOne';
+  mode: 'hasMany' | 'hasOne' = 'hasOne';
 
 }
 

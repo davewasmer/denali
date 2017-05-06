@@ -5,121 +5,102 @@ import {
   Model,
   Container,
   Serializer,
-  Service,
-  FlatSerializer } from 'denali';
-import {
-  merge
-} from 'lodash';
-import Response from '../../lib/runtime/response';
+  Request,
+  MockRequest,
+  MockResponse,
+  FlatParser,
+  RawSerializer } from 'denali';
+import { RenderOptions, ResponderParams } from 'lib/runtime/action';
 
-function mockReqRes(overrides?: any): any {
-  let container = new Container();
-
-  container.register('serializer:application', FlatSerializer);
-  container.register('config:environment', {});
-
-  return merge({
-    container,
-    request: {
-      get(headerName: string) {
-        return this.headers && this.headers[headerName.toLowerCase()];
-      },
-      headers: {
-        'content-type': 'application/json'
-      },
-      query: {},
-      body: {}
-    },
-    response: {
-      write() {},
-      setHeader() {},
-      render() {},
-      end() {}
-    },
-    next() {}
-  }, overrides);
+function mockRequest(options?: any) {
+  return new Request(<any>new MockRequest(options));
 }
 
-test('Action > invokes respond() with params', async (t) => {
-  t.plan(3);
-  class TestAction extends Action {
-    async respond(params: any) {
-      t.true(params.query);
-      t.true(params.body);
-      t.pass();
+test.beforeEach((t) => {
+  let container = t.context.container = new Container(__dirname);
+  container.register('parser:application', FlatParser);
+  container.register('serializer:application', RawSerializer);
+  container.register('config:environment', {});
+  t.context.runAction = async (options?: any) => {
+    let response = new MockResponse();
+    let action = await container.lookup<Action>('action:test');
+    action.actionPath = 'test';
+    await action.run(mockRequest(options), <any>response);
+    // If we can parse a response, return that, otherwise just return false (lots of these tests
+    // don't care about the response bod);
+    try {
+      return response._getJSON();
+    } catch (e) {
+      return false;
     }
-  }
-  let action = new TestAction(mockReqRes({
-    request: {
-      query: { query: true },
-      body: { body: true }
-    }
-  }));
-  return action.run();
+  };
 });
 
-test('Action > does not invoke the serializer if no response body was provided', async (t) => {
-  t.plan(1);
-  class TestAction extends Action {
-    serializer = 'foo';
-    respond() {
-      t.pass();
-    }
-  }
-  let mock = mockReqRes();
-  mock.container.register('serializer:foo', class extends Serializer {
-    serialize(response: Response) {
-      t.fail('Serializer should not be invoked');
-    }
-  });
-  let action = new TestAction(mock);
-
-  return action.run();
-});
-
-test('Action > uses a specified serializer type when provided', async (t) => {
+test('unit | action | invokes respond() with params', async (t) => {
   t.plan(2);
-  class TestAction extends Action {
-    serializer = 'foo';
-    respond() {
+  let container: Container = t.context.container;
+  container.register('action:test', class TestAction extends Action {
+    async respond({ query }: ResponderParams) {
+      t.is(query.foo, 'bar');
       t.pass();
       return {};
     }
-  }
-  let mock = mockReqRes();
-  mock.container.register('serializer:foo', class extends Serializer {
-    serialize() {
-      t.pass();
-    }
   });
-  let action = new TestAction(mock);
 
-  return action.run();
+  await t.context.runAction({ url: '/?foo=bar' });
 });
 
-test('Action > renders with the error serializer if an error was rendered', async (t) => {
-  t.plan(2);
-  class TestAction extends Action {
+test('Action | does not invoke the serializer if no response body was provided', async (t) => {
+  t.plan(1);
+  let container: Container = t.context.container;
+  container.register('serializer:application', class TestSerializer extends Serializer {
+    attributes: string[] = [];
+    relationships = {};
+    async serialize(action: Action, body: any, options: RenderOptions) {
+      t.fail('Serializer should not be invoked');
+    }
+  });
+  container.register('action:test', class TestAction extends Action {
     respond() {
       t.pass();
-      return new Error();
+      this.render(200);
     }
-  }
-  let mock = mockReqRes();
-  mock.container.register('serializer:error', class extends Serializer {
-    serialize() {
+  });
+
+  await t.context.runAction();
+});
+
+test('Action | uses a specified serializer type when provided', async (t) => {
+  t.plan(2);
+  let container: Container = t.context.container;
+  container.register('serializer:foo', class TestSerializer extends Serializer {
+    attributes: string[] = [];
+    relationships = {};
+    async serialize(action: Action, body: any, options: RenderOptions) {
       t.pass();
     }
   });
-  let action = new TestAction(mock);
+  container.register('action:test', class TestAction extends Action {
+    async respond() {
+      t.pass();
+      await this.render(200, {}, { serializer: 'foo' });
+    }
+  });
 
-  return action.run();
+  await t.context.runAction();
 });
 
-test('Action > should render with the model type serializer if a model was rendered', async (t) => {
+test('Action | should render with the model type serializer if a model was rendered', async (t) => {
   t.plan(2);
-  let mock = mockReqRes();
-  class TestAction extends Action {
+  let container: Container = t.context.container;
+  container.register('serializer:foo', class FooSerializer extends Serializer {
+    attributes: string[] = [];
+    relationships = {};
+    async serialize(action: Action, body: any, options: RenderOptions) {
+      t.pass();
+    }
+  });
+  container.register('action:test', class TestAction extends Action {
     respond() {
       t.pass();
       return new Proxy({
@@ -131,157 +112,116 @@ test('Action > should render with the model type serializer if a model was rende
         }
       });
     }
-  }
-  mock.container.register('serializer:foo', class extends Serializer {
-    serialize() {
+  });
+
+  await t.context.runAction();
+});
+
+test('Action | should render with the application serializer if all options exhausted', async (t) => {
+  t.plan(2);
+  let container: Container = t.context.container;
+  container.register('serializer:application', class TestSerializer extends Serializer {
+    attributes: string[] = [];
+    relationships = {};
+    async serialize(action: Action, body: any, options: RenderOptions) {
       t.pass();
     }
   });
-  let action = new TestAction(mock);
-
-  return action.run();
-});
-
-test('Action > should render with the application serializer if all options exhausted', async (t) => {
-  t.plan(2);
-  let mock = mockReqRes();
-  class TestAction extends Action {
+  container.register('action:test', class TestAction extends Action {
     respond() {
       t.pass();
       return {};
     }
-  }
-  mock.container.register('serializer:application', class extends Serializer {
-    serialize() {
-      t.pass();
-    }
   });
-  let action = new TestAction(mock);
 
-  return action.run();
+  await t.context.runAction();
 });
 
-test('Action > filters > invokes before filters prior to respond()', async (t) => {
+test('Action | filters > invokes before filters prior to respond()', async (t) => {
   let sequence: string[] = [];
-  class TestAction extends Action {
-    static before = [ 'before' ];
-    static after = [ 'after' ];
+  let container: Container = t.context.container;
+  container.register('action:test', class TestAction extends Action {
+    static before = [ 'beforeFilter' ];
+    static after = [ 'afterFilter' ];
 
-    before() {
-      sequence.push('before');
-    }
+    beforeFilter() { sequence.push('before'); }
+    respond() { sequence.push('respond'); return {}; }
+    afterFilter() { sequence.push('after'); }
+  });
 
-    respond() {
-      sequence.push('respond');
-    }
-
-    after() {
-      sequence.push('after');
-    }
-  }
-  let action = new TestAction(mockReqRes());
-
-  await action.run();
+  await t.context.runAction();
   t.deepEqual(sequence, [ 'before', 'respond', 'after' ]);
 });
 
-test('Action > filters > invokes superclass filters before subclass filters', async (t) => {
+test('Action | filters > invokes superclass filters before subclass filters', async (t) => {
   let sequence: string[] = [];
-  class ParentClass extends Action {
-    static before = [ 'before' ];
+  let container: Container = t.context.container;
+  abstract class ParentClass extends Action {
+    static before = [ 'parentBefore' ];
 
-    before() {
-      sequence.push('parent');
-    }
-
-    respond() {}
+    parentBefore() { sequence.push('parent'); }
   }
-  class ChildClass extends ParentClass {
-    static before = [ 'before', 'beforeChild' ];
+  container.register('action:test', class ChildClass extends ParentClass {
+    static before = [ 'childBefore' ];
 
-    beforeChild() {
-      sequence.push('child');
-    }
-  }
-  let action = new ChildClass(mockReqRes());
+    childBefore() { sequence.push('child'); }
+    respond() { return {}; }
+  });
 
-  await action.run();
+  await t.context.runAction();
   t.deepEqual(sequence, [ 'parent', 'child' ]);
 });
 
-test('Action > filters > error out when an non-existent filter was specified', async (t) => {
-  class TestAction extends Action {
+test('Action | filters > error out when an non-existent filter was specified', async (t) => {
+  let container: Container = t.context.container;
+  container.register('action:test', class TestAction extends Action {
     static before = [ 'some-non-existent-method' ];
     respond() {}
-  }
-  let action = new TestAction(mockReqRes());
+  });
 
   // tslint:disable-next-line:no-floating-promises
-  t.throws(action.run());
+  t.throws(t.context.runAction());
 });
 
-test('Action > filters > should render the returned value of a before filter (if that value != null)', async (t) => {
+test('Action | filters > before filters that render block the responder', async (t) => {
   t.plan(1);
-  class TestAction extends Action {
+  let container: Container = t.context.container;
+  container.register('action:test', class TestAction extends Action {
     static before = [ 'preempt' ];
-    serializer = false;
     respond() {
       t.fail('Filter should have preempted this responder method');
     }
     preempt() {
-      return { hello: 'world' };
+       this.render(200, { hello: 'world' });
     }
-  }
-  let action = new TestAction(mockReqRes());
-  let response = await action.run();
-  t.deepEqual(response.body, { hello: 'world' });
+  });
+  let response = await t.context.runAction();
+  t.deepEqual(response, { hello: 'world' });
 });
 
-test('Action > content negotiation > respond with the content-type specific responder', async (t) => {
-  class TestAction extends Action {
-    respond() {
-      t.fail('Should have used HTML responder');
-    }
-    respondWithHtml() {
+test('Action | filters > after filters run after responder, even if responder renders', async (t) => {
+  t.plan(1);
+  let container: Container = t.context.container;
+  container.register('action:test', class TestAction extends Action {
+    static after = [ 'afterFilter' ];
+    respond() { return {}; }
+    afterFilter() { t.pass(); }
+  });
+  await t.context.runAction();
+});
+
+test('Action | filters > after filters run even if a before filter renders', async (t) => {
+  t.plan(2);
+  let container: Container = t.context.container;
+  container.register('action:test', class TestAction extends Action {
+    static before = [ 'beforeFilter' ];
+    static after = [ 'afterFilter' ];
+    respond() { t.fail(); }
+    beforeFilter() {
       t.pass();
+      this.render(200);
     }
-}
-  let action = new TestAction(mockReqRes({
-    request: {
-      headers: {
-        'Content-type': 'text/html'
-      },
-      accepts() {
-        return 'html';
-      }
-    }
-  }));
-
-  return action.run();
-});
-
-test('Action > #modelFor(type) > returns the model for a given type', async (t) => {
-  let mock = mockReqRes();
-  class User extends Model {}
-  mock.container.register('model:user', User);
-  class TestAction extends Action {
-    respond() {}
-  }
-  let action = new TestAction(mock);
-
-  let ContainerUser = action.modelFor('user');
-  t.is(ContainerUser.type, 'user');
-});
-
-test('Action > #service(name) > returns the service for a given service name', async (t) => {
-  let mock = mockReqRes();
-  class MyService extends Service {}
-  mock.container.register('service:mine', MyService);
-  class TestAction extends Action {
-    respond() {}
-  }
-  let action = new TestAction(mock);
-
-  let service = action.service('mine');
-  t.true(service instanceof MyService);
+    afterFilter() { t.pass(); }
+  });
+  await t.context.runAction();
 });

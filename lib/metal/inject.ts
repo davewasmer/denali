@@ -5,11 +5,11 @@ export interface Injection {
 export const IS_INJECTION = Symbol('container injection placeholder');
 
 export function isInjection(value: any): value is Injection {
-  return Boolean(value[IS_INJECTION]);
+  return value != null && Boolean(value[IS_INJECTION]);
 }
 
-export default function inject(lookup: string): Injection {
-  return {
+export default function inject<T = any>(lookup: string): T {
+  return <any>{
     [IS_INJECTION]: true,
     lookup
   };

@@ -1,10 +1,6 @@
 import unwrap from './unwrap';
 import * as wrap from 'wordwrap';
 import * as tty from 'tty';
-import {
-  flatten,
-  zip
-} from 'lodash';
 
 /**
  * Take the tagged string and change the word wrapping to 100 columns (or the width of the terminal

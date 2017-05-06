@@ -2,7 +2,6 @@ import * as ware from 'ware';
 import { IncomingMessage, ServerResponse } from 'http';
 import { pluralize } from 'inflection';
 import { fromNode } from 'bluebird';
-import * as typeis from 'type-is';
 import * as createDebug from 'debug';
 import Errors from './errors';
 import Route from './route';
@@ -11,7 +10,6 @@ import ensureArray = require('arrify');
 import DenaliObject from '../metal/object';
 import Container from '../metal/container';
 import Action from './action';
-import Serializer from '../data/serializer';
 import {
   find,
   forEach
@@ -77,7 +75,7 @@ export default class Router extends DenaliObject implements RouterDSL {
   /**
    * The cache of available routes.
    */
-  public routes: RoutesCache = {
+  routes: RoutesCache = {
     get: [],
     post: [],
     put: [],
@@ -96,7 +94,7 @@ export default class Router extends DenaliObject implements RouterDSL {
   /**
    * The application container
    */
-  public container: Container;
+  container: Container;
 
   /**
    * Helper method to invoke the function exported by `config/routes.js` in the context of the
@@ -104,7 +102,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    *
    * @since 0.1.0
    */
-  public map(fn: (router: Router) => void): void {
+  map(fn: (router: Router) => void): void {
     debug('mapping routes');
     fn(this);
   }
@@ -114,14 +112,16 @@ export default class Router extends DenaliObject implements RouterDSL {
    * generic middleware first, hands them off to the appropriate action given the incoming URL, and
    * finally renders the response.
    */
-  public async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    let response;
+  async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     let request = new Request(req);
     try {
 
       debug(`[${ request.id }]: ${ request.method.toUpperCase() } ${ request.path }`);
+
+      // Middleware
       await fromNode((cb) => this.middleware.run(request, res, cb));
 
+      // Find the matching route
       debug(`[${ request.id }]: routing request`);
       let routes = this.routes[request.method];
       for (let i = 0; i < routes.length; i += 1) {
@@ -131,57 +131,22 @@ export default class Router extends DenaliObject implements RouterDSL {
           break;
         }
       }
+      // Handle 404s
       if (!request.route) {
         debug(`[${ request.id }]: ${ request.method } ${ request.path } did match any route. Available ${ request.method } routes:\n${ routes.map((r) => r.spec).join(',\n') }`);
         throw new Errors.NotFound('Route not recognized');
       }
 
-      let action: Action = new (<any>request.route.action)({
-        request,
-        container: this.container
-      });
+      // Create our action to handle the response
+      let action: Action = request.route.action.create();
 
-      let serializer: Serializer | false;
-      if (action.serializer != null) {
-        if (typeof action.serializer === 'string') {
-          serializer = this.container.lookup(`serializer:${ action.serializer }`);
-        } else if (action.serializer === false) {
-          serializer = null;
-        } else {
-          serializer = <Serializer | false>action.serializer;
-        }
-      } else {
-        serializer = this.container.lookup('serializer:application');
-      }
-
-      if (typeis.hasBody(request) && request.body && serializer) {
-        debug(`[${ request.id }]: parsing request body`);
-        request.body = serializer.parse(request.body);
-      }
-
+      // Run the action
       debug(`[${ request.id }]: running action`);
-      response = await action.run();
+      await action.run(request, res);
 
     } catch (error) {
-      response = await this.handleError(request, res, error);
+      await this.handleError(request, res, error);
     }
-
-    debug(`[${ request.id }]: setting response status code to ${ response.status }`);
-    res.statusCode = response.status;
-    res.setHeader('X-Request-Id', request.id);
-
-    if (response.body) {
-      debug(`[${ request.id }]: writing response body`);
-      res.setHeader('Content-type', response.contentType);
-      if (this.container.lookup('app:main').environment !== 'production') {
-        res.write(JSON.stringify(response.body, null, 2));
-      } else {
-        res.write(JSON.stringify(response.body));
-      }
-    }
-
-    res.end();
-    debug(`[${ request.id }]: response finished`);
   }
 
   /**
@@ -191,13 +156,8 @@ export default class Router extends DenaliObject implements RouterDSL {
   private async handleError(request: Request, res: ServerResponse, error: Error) {
     request.params = request.params || {};
     request.params.error = error;
-    let ErrorAction = this.container.lookup('action:error');
-    let errorAction = new ErrorAction({
-      request,
-      response: res,
-      container: this.container
-    });
-    return errorAction.run();
+    let errorAction = this.container.lookup('action:error');
+    return errorAction.run(request, res);
   }
 
   /**
@@ -206,7 +166,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    *
    * @since 0.1.0
    */
-  public use(middleware: MiddlewareFn): void {
+  use(middleware: MiddlewareFn): void {
     this.middleware.use(middleware);
   }
 
@@ -223,7 +183,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    *
    * @since 0.1.0
    */
-  public route(method: Method, rawPattern: string, actionPath: string, params?: any) {
+  route(method: Method, rawPattern: string, actionPath: string, params?: any) {
     // Ensure leading slashes
     let normalizedPattern = rawPattern.replace(/^([^/])/, '/$1');
     // Remove hardcoded trailing slashes
@@ -231,7 +191,7 @@ export default class Router extends DenaliObject implements RouterDSL {
     // Ensure optional trailing slashes
     normalizedPattern = `${ normalizedPattern }(/)`;
     // Add route
-    let ActionClass = this.container.lookup(`action:${ actionPath }`);
+    let ActionClass = this.container.factoryFor<Action>(`action:${ actionPath }`);
     let route = new Route(normalizedPattern);
     route.actionPath = actionPath;
     route.action = ActionClass;
@@ -247,17 +207,15 @@ export default class Router extends DenaliObject implements RouterDSL {
    * will be used to fill in the dynamic segements of the action's route (if
    * any).
    */
-  public urlFor(action: string | Action, data: any): string | boolean {
-    if (typeof action === 'string') {
-      action = this.container.lookup(`action:${ action }`);
-    }
+  urlFor(actionPath: string, data: any): string | boolean {
+    let action = this.container.factoryFor<Action>(`action:${ actionPath }`);
     if (!action) {
       return false;
     }
 
     let route: Route;
     forEach(this.routes, (routes) => {
-      route = find(routes, { action: <Action>action });
+      route = find(routes, { action });
       return !route; // kill the iterator if we found the match
     });
 
@@ -269,7 +227,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    *
    * @since 0.1.0
    */
-  public get(rawPattern: string, actionPath: string, params?: any): void {
+  get(rawPattern: string, actionPath: string, params?: any): void {
     this.route('get', rawPattern, actionPath, params);
   }
 
@@ -278,7 +236,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    *
    * @since 0.1.0
    */
-  public post(rawPattern: string, actionPath: string, params?: any): void {
+  post(rawPattern: string, actionPath: string, params?: any): void {
     this.route('post', rawPattern, actionPath, params);
   }
 
@@ -287,7 +245,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    *
    * @since 0.1.0
    */
-  public put(rawPattern: string, actionPath: string, params?: any): void {
+  put(rawPattern: string, actionPath: string, params?: any): void {
     this.route('put', rawPattern, actionPath, params);
   }
 
@@ -296,7 +254,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    *
    * @since 0.1.0
    */
-  public patch(rawPattern: string, actionPath: string, params?: any): void {
+  patch(rawPattern: string, actionPath: string, params?: any): void {
     this.route('patch', rawPattern, actionPath, params);
   }
 
@@ -305,7 +263,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    *
    * @since 0.1.0
    */
-  public delete(rawPattern: string, actionPath: string, params?: any): void {
+  delete(rawPattern: string, actionPath: string, params?: any): void {
     this.route('delete', rawPattern, actionPath, params);
   }
 
@@ -314,7 +272,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    *
    * @since 0.1.0
    */
-  public head(rawPattern: string, actionPath: string, params?: any): void {
+  head(rawPattern: string, actionPath: string, params?: any): void {
     this.route('head', rawPattern, actionPath, params);
   }
 
@@ -323,7 +281,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    *
    * @since 0.1.0
    */
-  public options(rawPattern: string, actionPath: string, params?: any): void {
+  options(rawPattern: string, actionPath: string, params?: any): void {
     this.route('options', rawPattern, actionPath, params);
   }
 
@@ -355,7 +313,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    *
    * @since 0.1.0
    */
-  public resource(resourceName: string, options: ResourceOptions = {}): void {
+  resource(resourceName: string, options: ResourceOptions = {}): void {
     let plural = pluralize(resourceName);
     let collection = `/${ plural }`;
     let resource = `${ collection }/:id`;
@@ -416,7 +374,7 @@ export default class Router extends DenaliObject implements RouterDSL {
    *   let namespace = router.namespace('users');
    *   namespace.get('sign-in');
    */
-  public namespace(namespace: string, fn: (wrapper: RouterDSL) => void): void {
+  namespace(namespace: string, fn: (wrapper: RouterDSL) => void): void {
     let router = this;
     if (namespace.endsWith('/')) {
       namespace = namespace.slice(0, namespace.length - 1);

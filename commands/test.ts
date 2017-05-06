@@ -14,17 +14,17 @@ import { ui, Command, Project } from 'denali-cli';
 export default class TestCommand extends Command {
 
   /* tslint:disable:completed-docs typedef */
-  public static commandName = 'test';
-  public static description = "Run your app's test suite";
-  public static longDescription = unwrap`
+  static commandName = 'test';
+  static description = "Run your app's test suite";
+  static longDescription = unwrap`
     Runs your app's test suite, and can optionally keep re-running it on each file change (--watch).
   `;
 
-  public static runsInApp = true;
+  static runsInApp = true;
 
-  public static params = '[files...]';
+  static params = '[files...]';
 
-  public static flags = {
+  static flags = {
     debug: {
       description: 'The test file you want to debug. Can only debug one file at a time.',
       type: <any>'string'
@@ -89,9 +89,9 @@ export default class TestCommand extends Command {
     }
   };
 
-  public tests: ChildProcess;
+  tests: ChildProcess;
 
-  public async run(argv: any) {
+  async run(argv: any) {
     let files = argv.files;
     if (files.length === 0) {
       files.push('test/**/*.js');

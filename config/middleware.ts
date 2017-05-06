@@ -1,6 +1,5 @@
 import {
-  defaults,
-  defaultsDeep
+  defaults
 } from 'lodash';
 import * as timing from 'response-time';
 import * as compression from 'compression';

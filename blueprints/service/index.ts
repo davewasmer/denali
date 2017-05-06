@@ -9,9 +9,9 @@ import unwrap from '../../lib/utils/unwrap';
 export default class ServiceBlueprint extends Blueprint {
 
   /* tslint:disable:completed-docs typedef */
-  public static blueprintName = 'service';
-  public static description = 'Generates a blank service';
-  public static longDescription = unwrap`
+  static blueprintName = 'service';
+  static description = 'Generates a blank service';
+  static longDescription = unwrap`
     Usage: denali generate service <name> [options]
 
     Generates a blank service class.
@@ -19,6 +19,6 @@ export default class ServiceBlueprint extends Blueprint {
     Guides: http://denalijs.org/master/guides/application/services/
   `;
 
-  public static params = '<name>';
+  static params = '<name>';
 
 }

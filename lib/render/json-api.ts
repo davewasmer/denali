@@ -1,38 +1,26 @@
-import * as assert from 'assert';
-import * as path from 'path';
-import { singularize, pluralize } from 'inflection';
-import Serializer from '../serializer';
-import Model from '../model';
-import Errors from '../../runtime/errors';
-import Response from '../../runtime/response';
-import Router from '../../runtime/router';
-import { RelationshipDescriptor } from '../descriptors';
-import { RelationshipConfig } from '../serializer';
-import { map, each, resolve } from 'bluebird';
 import {
   assign,
   isArray,
   isUndefined,
-  isEmpty,
-  set,
-  mapKeys,
-  capitalize,
-  camelCase,
   kebabCase,
-  forEach,
   uniqBy
 } from 'lodash';
+import * as assert from 'assert';
+import * as path from 'path';
+import { pluralize } from 'inflection';
+import Serializer from './serializer';
+import Model from '../data/model';
+import Router from '../runtime/router';
+import Action, { RenderOptions } from '../runtime/action';
+import { RelationshipDescriptor } from '../data/descriptors';
+import { RelationshipConfig } from './serializer';
+import { map } from 'bluebird';
+import setIfNotEmpty from '../utils/set-if-not-empty';
 
 /**
  * Ensures that the value is only set if it exists, so we avoid creating iterable keys on obj for
  * undefined values.
  */
-function setIfNotEmpty(obj: any, key: string, value: any): void {
-  if (!isEmpty(value)) {
-    set<any, string, any>(obj, key, value);
-  }
-}
-
 export interface JsonApiDocument {
   data?: JsonApiResourceObject | JsonApiResourceObject[] | JsonApiResourceIdentifier | JsonApiResourceIdentifier[];
   errors?: JsonApiError[];
@@ -174,7 +162,8 @@ export interface Options {
  * Used internally to simplify passing arguments required by all functions.
  */
 export interface Context {
-  response: Response;
+  action: Action;
+  body: any;
   options: Options;
   document: JsonApiDocument;
 }
@@ -185,20 +174,21 @@ export interface Context {
  *
  * @package data
  */
-export default class JSONAPISerializer extends Serializer {
+export default abstract class JSONAPISerializer extends Serializer {
 
   /**
    * The default content type to use for any responses rendered by this serializer.
    */
-  public contentType = 'application/vnd.api+json';
+  contentType = 'application/vnd.api+json';
 
   /**
    * Take a response body (a model, an array of models, or an Error) and render it as a JSONAPI
    * compliant document
    */
-  public async serialize(response: Response, options?: any): Promise<void> {
+  async serialize(action: Action, body: any, options: RenderOptions): Promise<JsonApiDocument> {
     let context: Context = {
-      response,
+      action,
+      body,
       options,
       document: {}
     };
@@ -208,15 +198,14 @@ export default class JSONAPISerializer extends Serializer {
     this.renderLinks(context);
     this.renderVersion(context);
     this.dedupeIncluded(context);
-    response.body = context.document;
-    response.contentType = this.contentType;
+    return context.document;
   }
 
   /**
    * Render the primary payload for a JSONAPI document (either a model or array of models).
    */
   protected async renderPrimary(context: Context): Promise<void> {
-    let payload = context.response.body;
+    let payload = context.body;
     if (isArray(payload)) {
       await this.renderPrimaryArray(context, payload);
     } else {
@@ -461,7 +450,7 @@ export default class JSONAPISerializer extends Serializer {
     let relatedOptions = (context.options.relationships && context.options.relationships[name]) || context.options;
     let relatedSerializer: JSONAPISerializer = config.serializer || this.container.lookup(`serializer:${ relatedRecord.type }`);
     let relatedContext: Context = assign({}, context, { options: relatedOptions });
-    context.document.included.push(await relatedSerializer.renderRecord(context, relatedRecord));
+    context.document.included.push(await relatedSerializer.renderRecord(relatedContext, relatedRecord));
   }
 
   /**
@@ -516,93 +505,5 @@ export default class JSONAPISerializer extends Serializer {
     }
   }
 
-  /**
-   * Unlike the other serializers, the default parse implementation does modify the incoming
-   * payload. It converts the default dasherized attribute names into camelCase.
-   *
-   * The parse method here retains the JSONAPI document structure (i.e. data, included, links, meta,
-   * etc), only modifying resource objects in place.
-   */
-  public parse(payload: any, options?: any): any {
-    try {
-      assert(payload.data, 'Invalid JSON-API document (missing top level `data` object - see http://jsonapi.org/format/#document-top-level)');
-      let parseResource = this._parseResource.bind(this);
-      if (payload.data) {
-        if (!isArray(payload.data)) {
-          payload.data = parseResource(payload.data);
-        } else {
-          payload.data = payload.data.map(parseResource);
-        }
-      }
-      if (payload.included) {
-        payload.included = payload.included.map(parseResource);
-      }
-    } catch (e) {
-      if (e.name === 'AssertionError') {
-        throw new Errors.BadRequest(e.message);
-      }
-      throw e;
-    }
-    return payload;
-  }
-
-
-  /**
-   * Takes a JSON-API resource object and hands it off for parsing to the serializer specific to
-   * that object's type.
-   */
-  private _parseResource(resource: JsonApiResourceObject): any {
-    assert(typeof resource.type === 'string', 'Invalid resource object encountered (missing `type` - see http://jsonapi.org/format/#document-resource-object-identification)');
-    resource.type = this.parseType(resource.type);
-    let relatedSerializer: JSONAPISerializer = this.container.lookup(`serializer:${ resource.type }`);
-    assert(relatedSerializer, `No serializer found for ${ resource.type }`);
-    assert(relatedSerializer.parseResource, `The serializer found for ${ resource.type } does not implement the .parseResource() method. Are you trying to parse a model whose default serializer is not JSON-API?`);
-    return relatedSerializer.parseResource(resource);
-  }
-
-  /**
-   * Parse a single resource object from a JSONAPI document. The resource object could come from the
-   * top level `data` payload, or from the sideloaded `included` records.
-   */
-  protected parseResource(resource: JsonApiResourceObject): any {
-    setIfNotEmpty(resource, 'id', this.parseId(resource.id));
-    setIfNotEmpty(resource, 'attributes', this.parseAttributes(resource.attributes));
-    setIfNotEmpty(resource, 'relationships', this.parseRelationships(resource.relationships));
-    return resource;
-  }
-
-  /**
-   * Parse a resource object id
-   */
-  protected parseId(id: string): any {
-    return id;
-  }
-
-  /**
-   * Parse a resource object's type string
-   */
-  protected parseType(type: string): string {
-    return singularize(type);
-  }
-
-  /**
-   * Parse a resource object's attributes. By default, this converts from the JSONAPI recommended
-   * dasheried keys to camelCase.
-   */
-  protected parseAttributes(attrs: JsonApiAttributes): any {
-    return mapKeys(attrs, (value, key) => {
-      return camelCase(key);
-    });
-  }
-
-  /**
-   * Parse a resource object's relationships. By default, this converts from the JSONAPI recommended
-   * dasheried keys to camelCase.
-   */
-  protected parseRelationships(relationships: JsonApiRelationships): any {
-    return mapKeys(relationships, (value, key) => {
-      return camelCase(key);
-    });
-  }
 
 }

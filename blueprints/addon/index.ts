@@ -21,9 +21,9 @@ const maxBuffer = 400 * ONE_KB;
 export default class AddonBlueprint extends Blueprint {
 
   /* tslint:disable:completed-docs typedef */
-  public static blueprintName = 'addon';
-  public static description = 'Creates a new addon project, initializes git and installs dependencies';
-  public static longDescription = unwrap`
+  static blueprintName = 'addon';
+  static description = 'Creates a new addon project, initializes git and installs dependencies';
+  static longDescription = unwrap`
     Usage: denali generate addon <name> [options]
 
     Scaffolds a new addon. Sets up the correct directory structure, initializes a git repo, and
@@ -32,9 +32,9 @@ export default class AddonBlueprint extends Blueprint {
     Guides: http://denalijs.org/master/guides/utilities/addons/
   `;
 
-  public static params = '<name>';
+  static params = '<name>';
 
-  public static flags = {
+  static flags = {
     'skip-deps': {
       description: 'Do not install dependencies on new addon',
       defaultValue: false,
@@ -47,7 +47,7 @@ export default class AddonBlueprint extends Blueprint {
     }
   };
 
-  public locals(argv: any) {
+  locals(argv: any) {
     let name = argv.name;
     return {
       name,
@@ -57,7 +57,7 @@ export default class AddonBlueprint extends Blueprint {
     };
   }
 
-  public async postInstall(argv: any) {
+  async postInstall(argv: any) {
     let name = argv.name;
     ui.info('');
     if (!argv.skipDeps) {

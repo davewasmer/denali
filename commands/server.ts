@@ -19,9 +19,9 @@ const debug = createDebug('denali:commands:server');
 export default class ServerCommand extends Command {
 
   /* tslint:disable:completed-docs typedef */
-  public static commandName = 'server';
-  public static description = 'Runs the denali server for local or production use.';
-  public static longDescription = unwrap`
+  static commandName = 'server';
+  static description = 'Runs the denali server for local or production use.';
+  static longDescription = unwrap`
     Launches the Denali server running your application.
 
     In a development environment, the server does several things:
@@ -34,9 +34,9 @@ export default class ServerCommand extends Command {
 
      * the server will fork worker processes to maximize CPU core usage`;
 
-  public static runsInApp = true;
+  static runsInApp = true;
 
-  public static flags = {
+  static flags = {
     environment: {
       description: 'The target environment to build for.',
       default: process.env.NODE_ENV || 'development',
@@ -88,9 +88,9 @@ export default class ServerCommand extends Command {
     }
   };
 
-  public server: ChildProcess;
+  server: ChildProcess;
 
-  public async run(argv: any) {
+  async run(argv: any) {
     debug('running server command');
     if (argv.production) {
       argv.skipBuild = true;
@@ -152,10 +152,6 @@ export default class ServerCommand extends Command {
       return;
     }
     debug(`starting server process: ${ process.execPath } ${ args.join(' ') }`);
-    let defaultEnvs = {
-      PORT: argv.port,
-      NODE_ENV: argv.environment
-    };
     this.server = spawn(process.execPath, args, {
       cwd: dir,
       stdio: [ 'pipe', process.stdout, process.stderr ],
