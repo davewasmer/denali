@@ -1,9 +1,11 @@
 {
   "exclude": [
     "**/blueprints/*/files/**",
+    "dist/**",
+    "coverage/**",
     "test/**",
-    "tmp/**"
+    "node_modules/**",
+    "!**/node_modules/**"
   ],
-  "reporter": "json",
-  "all": true
+  "reporter": "json"
 }

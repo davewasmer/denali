@@ -13,6 +13,7 @@
 import { attr, hasMany, hasOne, RelationshipDescriptor, Attribute } from './data/descriptors';
 import Model from './data/model';
 import ORMAdapter from './data/orm-adapter';
+import MemoryAdapter from './data/memory';
 
 // Render
 import Serializer from './render/serializer';
@@ -60,6 +61,7 @@ export {
   Attribute,
   Model,
   ORMAdapter,
+  MemoryAdapter,
 
   // Render
   View,

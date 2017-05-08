@@ -458,16 +458,31 @@ export default abstract class JSONAPISerializer extends Serializer {
    */
   protected renderError(context: Context, error: any): JsonApiError {
     let renderedError = {
-      id: error.id,
       status: error.status || 500,
       code: error.code || error.name || 'InternalServerError',
-      title: error.title,
       detail: error.message
     };
+    setIfNotEmpty(renderedError, 'id', this.idForError(context, error));
+    setIfNotEmpty(renderedError, 'title', this.titleForError(context, error));
     setIfNotEmpty(renderedError, 'source', this.sourceForError(context, error));
     setIfNotEmpty(renderedError, 'meta', this.metaForError(context, error));
     setIfNotEmpty(renderedError, 'links', this.linksForError(context, error));
     return renderedError;
+  }
+
+  /**
+   * Given an error, return a unique id for this particular occurence of the problem.
+   */
+  protected idForError(context: Context, error: any): string {
+    return error.id;
+  }
+
+  /**
+   * A short, human-readable summary of the problem that SHOULD NOT change from occurrence to
+   * occurrence of the problem, except for purposes of localization.
+   */
+  protected titleForError(context: Context, error: any): string {
+    return error.title;
   }
 
   /**

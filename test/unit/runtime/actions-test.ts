@@ -36,7 +36,10 @@ test.beforeEach((t) => {
   };
 });
 
-test('unit | action | invokes respond() with params', async (t) => {
+test.todo('renders with a custom view if provided');
+test.todo('throws if nothing renders');
+
+test('invokes respond() with params', async (t) => {
   t.plan(2);
   let container: Container = t.context.container;
   container.register('action:test', class TestAction extends Action {
@@ -50,7 +53,7 @@ test('unit | action | invokes respond() with params', async (t) => {
   await t.context.runAction({ url: '/?foo=bar' });
 });
 
-test('Action | does not invoke the serializer if no response body was provided', async (t) => {
+test('does not invoke the serializer if no response body was provided', async (t) => {
   t.plan(1);
   let container: Container = t.context.container;
   container.register('serializer:application', class TestSerializer extends Serializer {
@@ -70,7 +73,7 @@ test('Action | does not invoke the serializer if no response body was provided',
   await t.context.runAction();
 });
 
-test('Action | uses a specified serializer type when provided', async (t) => {
+test('uses a specified serializer type when provided', async (t) => {
   t.plan(2);
   let container: Container = t.context.container;
   container.register('serializer:foo', class TestSerializer extends Serializer {
@@ -90,7 +93,7 @@ test('Action | uses a specified serializer type when provided', async (t) => {
   await t.context.runAction();
 });
 
-test('Action | should render with the model type serializer if a model was rendered', async (t) => {
+test('renders with the model type serializer if a model was rendered', async (t) => {
   t.plan(2);
   let container: Container = t.context.container;
   container.register('serializer:foo', class FooSerializer extends Serializer {
@@ -117,7 +120,7 @@ test('Action | should render with the model type serializer if a model was rende
   await t.context.runAction();
 });
 
-test('Action | should render with the application serializer if all options exhausted', async (t) => {
+test('renders with the application serializer if all options exhausted', async (t) => {
   t.plan(2);
   let container: Container = t.context.container;
   container.register('serializer:application', class TestSerializer extends Serializer {
@@ -137,7 +140,7 @@ test('Action | should render with the application serializer if all options exha
   await t.context.runAction();
 });
 
-test('Action | filters > invokes before filters prior to respond()', async (t) => {
+test('invokes before filters prior to respond()', async (t) => {
   let sequence: string[] = [];
   let container: Container = t.context.container;
   container.register('action:test', class TestAction extends Action {
@@ -153,7 +156,7 @@ test('Action | filters > invokes before filters prior to respond()', async (t) =
   t.deepEqual(sequence, [ 'before', 'respond', 'after' ]);
 });
 
-test('Action | filters > invokes superclass filters before subclass filters', async (t) => {
+test('invokes superclass filters before subclass filters', async (t) => {
   let sequence: string[] = [];
   let container: Container = t.context.container;
   abstract class ParentClass extends Action {
@@ -172,7 +175,7 @@ test('Action | filters > invokes superclass filters before subclass filters', as
   t.deepEqual(sequence, [ 'parent', 'child' ]);
 });
 
-test('Action | filters > error out when an non-existent filter was specified', async (t) => {
+test('error out when an non-existent filter was specified', async (t) => {
   let container: Container = t.context.container;
   container.register('action:test', class TestAction extends Action {
     static before = [ 'some-non-existent-method' ];
@@ -180,10 +183,10 @@ test('Action | filters > error out when an non-existent filter was specified', a
   });
 
   // tslint:disable-next-line:no-floating-promises
-  t.throws(t.context.runAction());
+  await t.throws(t.context.runAction());
 });
 
-test('Action | filters > before filters that render block the responder', async (t) => {
+test('before filters that render block the responder', async (t) => {
   t.plan(1);
   let container: Container = t.context.container;
   container.register('action:test', class TestAction extends Action {
@@ -199,7 +202,7 @@ test('Action | filters > before filters that render block the responder', async 
   t.deepEqual(response, { hello: 'world' });
 });
 
-test('Action | filters > after filters run after responder, even if responder renders', async (t) => {
+test('after filters run after responder, even if responder renders', async (t) => {
   t.plan(1);
   let container: Container = t.context.container;
   container.register('action:test', class TestAction extends Action {
@@ -210,7 +213,7 @@ test('Action | filters > after filters run after responder, even if responder re
   await t.context.runAction();
 });
 
-test('Action | filters > after filters run even if a before filter renders', async (t) => {
+test('after filters run even if a before filter renders', async (t) => {
   t.plan(2);
   let container: Container = t.context.container;
   container.register('action:test', class TestAction extends Action {

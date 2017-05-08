@@ -68,10 +68,11 @@ export default class JSONAPIParser extends Parser {
    * top level `data` payload, or from the sideloaded `included` records.
    */
   protected parseResource(resource: JsonApiResourceObject): any {
-    setIfNotEmpty(resource, 'id', this.parseId(resource.id));
-    setIfNotEmpty(resource, 'attributes', this.parseAttributes(resource.attributes));
-    setIfNotEmpty(resource, 'relationships', this.parseRelationships(resource.relationships));
-    return resource;
+    let parsedResource = {};
+    setIfNotEmpty(parsedResource, 'id', this.parseId(resource.id));
+    Object.assign(parsedResource, this.parseAttributes(resource.attributes));
+    Object.assign(parsedResource, this.parseRelationships(resource.relationships));
+    return parsedResource;
   }
 
   /**

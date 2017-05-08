@@ -14,7 +14,7 @@ function linkDependency(pkgDir: string, dependencyName: string, dependencyDir: s
   fs.symlinkSync(dependencyDir, dest);
 }
 
-test('server command > launches a server', async () => {
+test('launches a server', async (t) => {
   let server = new CommandAcceptanceTest('server --port 3001', { name: 'server-command' });
 
   return server.spawn({
@@ -23,12 +23,16 @@ test('server command > launches a server', async () => {
       DEBUG: null
     },
     checkOutput(stdout) {
-      return stdout.indexOf('dummy@0.0.0 server up') > -1;
+      let started = stdout.indexOf('dummy@0.0.0 server up') > -1;
+      if (started) {
+        t.pass();
+      }
+      return started;
     }
   });
 });
 
-test('server command > launches a server based on the dummy app in an addon', async () => {
+test('launches a server based on the dummy app in an addon', async (t) => {
   let generateAddon = new CommandAcceptanceTest('generate addon my-denali-addon', { name: 'server-command-dummy-app', populateWithDummy: false });
   await generateAddon.run({ failOnStderr: true });
   linkDependency(path.join(generateAddon.dir, 'my-denali-addon'), 'denali', path.join(process.cwd(), 'node_modules', 'denali'));
@@ -40,7 +44,11 @@ test('server command > launches a server based on the dummy app in an addon', as
   return server.spawn({
     failOnStderr: true,
     checkOutput(stdout, stderr) {
-      return stdout.indexOf('dummy@0.0.0 server up') > -1;
+      let started = stdout.indexOf('dummy@0.0.0 server up') > -1;
+      if (started) {
+        t.pass();
+      }
+      return started;
     }
   });
 });

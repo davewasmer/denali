@@ -12,14 +12,14 @@ test.beforeEach('generate an action to destroy', async (t) => {
   t.true(fs.existsSync(t.context.generatedFilepath), 'file should be generated');
 });
 
-test('destroy command > destroys a blueprint', async (t) => {
+test('destroys a blueprint', async (t) => {
   let destroy = new CommandAcceptanceTest('destroy action foobar', { dir: t.context.dir, populateWithDummy: false });
 
   await destroy.run();
   t.false(fs.existsSync(t.context.generatedFilepath), 'file should be removed');
 });
 
-test('destroy command > skips modified files', async (t) => {
+test('skips modified files', async (t) => {
   let destroy = new CommandAcceptanceTest('destroy action foobar', { dir: t.context.dir, populateWithDummy: false });
   fs.appendFileSync(t.context.generatedFilepath, 'foobar');
 

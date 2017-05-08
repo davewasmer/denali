@@ -3,7 +3,7 @@ import { ServerResponse } from 'http';
 import Action, { RenderOptions } from '../runtime/action';
 
 export interface RelationshipConfig {
-  strategy?: 'embed' | 'id';
+  strategy?: 'embed' | 'id' | string;
   key?: string;
   serializer?: string;
 }

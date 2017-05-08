@@ -9,6 +9,7 @@ import ORMAdapter from './orm-adapter';
 import Model from './model';
 import { RelationshipDescriptor } from './descriptors';
 import * as assert from 'assert';
+import { singularize } from 'inflection';
 
 let guid = 0;
 
@@ -40,12 +41,12 @@ export default class MemoryAdapter extends ORMAdapter {
 
   // tslint:disable:completed-docs
 
-  async find(type: string, id: number | string): Promise<any> {
-    return find(this._cacheFor(type), id);
+  async find(type: string, id: number): Promise<any> {
+    return this._cacheFor(type)[id] || null;
   }
 
   async findOne(type: string, query: any): Promise<any> {
-    return find(this._cacheFor(type), query);
+    return find(this._cacheFor(type), query) || null;
   }
 
   async all(type: string): Promise<any[]> {
@@ -89,28 +90,37 @@ export default class MemoryAdapter extends ORMAdapter {
   async getRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, query: any): Promise<any|any[]> {
     let relatedCollection = this._cacheFor(descriptor.type);
     if (descriptor.mode === 'hasMany') {
-      return filter(relatedCollection, (relatedRecord: any) => {
-        return model.record[`${ relationship }_ids`].contains(relatedRecord.id);
+      let related = filter(relatedCollection, (relatedRecord: any) => {
+        let relatedIds = model.record[`${ singularize(relationship) }_ids`];
+        return relatedIds && relatedIds.includes(relatedRecord.id);
       });
+      if (query) {
+        related = filter(related, query);
+      }
+      return related;
     }
     return this.findOne(descriptor.type, { id: model.record[`${ relationship }_id`] });
   }
 
-  async setRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, relatedRecords: any|any[]): Promise<void> {
-    if (Array.isArray(relatedRecords)) {
+  async setRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, relatedModels: Model|Model[]): Promise<void> {
+    if (Array.isArray(relatedModels)) {
       assert(descriptor.mode === 'hasMany', `You tried to set ${ relationship } to an array of related records, but it is a hasOne relationship`);
-      model.record[`${ relationship }_ids`] = map(relatedRecords, 'id');
+      model.record[`${ singularize(relationship) }_ids`] = map(relatedModels, 'record.id');
     } else {
-      model.record[`${ relationship }_id`] = relatedRecords.id;
+      model.record[`${ relationship }_id`] = relatedModels.record.id;
     }
   }
 
-  async addRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, relatedRecord: any): Promise<void> {
-    model.record[`${ relationship }_ids`].push(relatedRecord.id);
+  async addRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, relatedModel: Model): Promise<void> {
+    let relatedIds = model.record[`${ singularize(relationship) }_ids`];
+    if (!relatedIds) {
+      relatedIds = model.record[`${ singularize(relationship) }_ids`] = [];
+    }
+    relatedIds.push(relatedModel.id);
   }
 
-  async removeRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, relatedRecord: any): Promise<void> {
-    remove(model.record[`${ relationship }_ids`], { id: relatedRecord.id });
+  async removeRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, relatedModel: Model): Promise<void> {
+    remove(model.record[`${ singularize(relationship) }_ids`], (id) => id === relatedModel.id);
   }
 
   async saveRecord(model: Model): Promise<void> {

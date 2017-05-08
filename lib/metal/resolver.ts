@@ -1,6 +1,7 @@
 import {
   camelCase,
-  upperFirst
+  upperFirst,
+  uniq
 } from 'lodash';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -98,12 +99,19 @@ export default class Resolver {
    * that type, then retrieves all members for that type (typically from the filesystem).
    */
   availableForType(type: string) {
+    let registeredForType: string[] = [];
+    this.registry.forEach((entry, specifier) => {
+      if (specifier.split(':')[0] === type) {
+        registeredForType.push(specifier);
+      }
+    });
     let availableMethod = <AvailableForTypeMethod>this[`availableFor${ upperFirst(camelCase(type)) }`];
     if (!availableMethod) {
       availableMethod = this.availableForOther;
     }
     let entries = <string[]>availableMethod.call(this, type);
-    return entries.map((entry) => `${ type }:${ entry }`);
+    let resolvedEntries = entries.map((entry) => `${ type }:${ entry }`);
+    return uniq(registeredForType.sort().concat(resolvedEntries.sort()));
   }
 
   /**
@@ -120,7 +128,7 @@ export default class Resolver {
   /**
    * App files are found in `app/*`
    */
-  protected retrieveAllApp(type: string, entry: string) {
+  protected availableForApp(type: string, entry: string) {
     let appDir = path.join(this.root, 'app');
     if (fs.existsSync(appDir)) {
       return Object.keys(requireDir(appDir, { recurse: false }));
@@ -131,7 +139,7 @@ export default class Resolver {
   /**
    * Config files are found in the `config/` folder. Initializers are _not_ included in this group
    */
-  protected retrieveAllConfig(type: string) {
+  protected availableForConfig(type: string) {
     let configDir = path.join(this.root, 'config');
     if (fs.existsSync(configDir)) {
       return Object.keys(requireDir(configDir)).filter((entry) => {
@@ -144,7 +152,7 @@ export default class Resolver {
   /**
    * Initializers files are found in the `config/initializers/` folder
    */
-  protected retrieveAllInitializer(type: string) {
+  protected availableForInitializer(type: string) {
     let initializersDir = path.join(this.root, 'config', 'initializers');
     if (fs.existsSync(initializersDir)) {
       return Object.keys(requireDir(initializersDir));

@@ -1,7 +1,7 @@
-import { isEmpty, set } from 'lodash';
+import { isArray, isEmpty, set } from 'lodash';
 
 export default function setIfNotEmpty(obj: any, key: string, value: any): void {
-  if (!isEmpty(value)) {
+  if (isArray(value) || !isEmpty(value)) {
     set<any, string, any>(obj, key, value);
   }
 }

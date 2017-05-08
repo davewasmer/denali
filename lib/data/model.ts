@@ -99,6 +99,9 @@ export default class Model extends DenaliObject {
     debug(`${ this.type } find: ${ id }`);
     assert(id != null, `You must pass an id to Model.find(id)`);
     let result = await this.adapter.find(this.type, id, options);
+    if (!result) {
+      return null;
+    }
     let Factory = this.container.factoryFor(`model:${ this.type }`);
     return Factory.create(result);
   }
@@ -142,26 +145,17 @@ export default class Model extends DenaliObject {
   }
 
   /**
-   * Create a new record and immediately persist it.
-   */
-  static async create(data: any, options?: any): Promise<Model> {
-    debug(`creating ${ this.type }`);
-    let instance = new this({}, options);
-    // We do this here, rather than in buildRecord, in case some of the data supplied isn't an
-    // actual attribute (which means it will get set on the wrapper proxy this way).
-    Object.assign(instance, data);
-    return await instance.save();
-  }
-
-  /**
    * The ORM adapter specific to this model type. Defaults to the application's ORM adapter if none
    * for this specific model type is found.
    *
    * @readonly
    */
   static get adapter(): ORMAdapter {
-    let adapter = this.container.lookup(`orm-adapter:${ this.type }`);
-    assert(adapter, `No adapter found for ${ this.type }! Available adapters: ${ this.container.availableForType('orm-adapter') }`);
+    let adapter = this.container.lookup(`orm-adapter:${ this.type }`, { loose: true });
+    if (!adapter) {
+      adapter = this.container.lookup('orm-adapter:application', { loose: true });
+    }
+    assert(adapter, `No adapter found for ${ this.type }, and no fallback application adapter found either! Available adapters: ${ this.container.availableForType('orm-adapter') }`);
     return adapter;
   }
 
@@ -215,7 +209,7 @@ export default class Model extends DenaliObject {
             relationshipName = lowerFirst(relationshipName);
             descriptor = (<any>model.constructor)[relationshipName] || (<any>model.constructor)[pluralize(relationshipName)];
             if (descriptor && descriptor.isRelationship) {
-              return model[`${ operation }Related`].bind(model, relationshipName, descriptor);
+              return model[`${ operation }Related`].bind(model, relationshipName);
             }
           }
         }
@@ -268,26 +262,26 @@ export default class Model extends DenaliObject {
    * Returns the related record(s) for the given relationship.
    */
   async getRelated(relationshipName: string, query?: any, options?: any): Promise<Model|Model[]> {
-    let descriptor = (<any>this.constructor)[relationshipName] || (<any>this.constructor)[pluralize(relationshipName)];
+    let descriptor = (<any>this.constructor)[relationshipName];
     assert(descriptor && descriptor.isRelationship, `You tried to fetch related ${ relationshipName }, but no such relationship exists on ${ this.type }`);
     if (descriptor.mode === 'hasOne') {
       options = query;
       query = null;
     }
     let results = await this.adapter.getRelated(this, relationshipName, descriptor, query, options);
-    let RelatedModel = this.modelFor(descriptor.type);
+    let RelatedModel = this.container.factoryFor(`model:${ descriptor.type }`);
     if (!Array.isArray(results)) {
       assert(descriptor.mode === 'hasOne', 'The ORM adapter returned an array for a hasOne relationship - it should return either the record or null');
-      return results ? new RelatedModel(results) : null;
+      return results ? RelatedModel.create(results) : null;
     }
-    return results.map((record) => new RelatedModel(record));
+    return results.map((record) => RelatedModel.create(record));
   }
 
   /**
    * Replaces the related records for the given relationship with the supplied related records.
    */
   async setRelated(relationshipName: string, relatedModels: Model|Model[], options?: any): Promise<void> {
-    let descriptor = (<any>this.constructor)[relationshipName] || (<any>this.constructor)[pluralize(relationshipName)];
+    let descriptor = (<any>this.constructor)[relationshipName];
     await this.adapter.setRelated(this, relationshipName, descriptor, relatedModels, options);
   }
 
@@ -295,7 +289,7 @@ export default class Model extends DenaliObject {
    * Add a related record to a hasMany relationship.
    */
   async addRelated(relationshipName: string, relatedModel: Model, options?: any): Promise<void> {
-    let descriptor = (<any>this.constructor)[relationshipName] || (<any>this.constructor)[pluralize(relationshipName)];
+    let descriptor = (<any>this.constructor)[pluralize(relationshipName)];
     await this.adapter.addRelated(this, relationshipName, descriptor, relatedModel, options);
   }
 
@@ -303,7 +297,7 @@ export default class Model extends DenaliObject {
    * Remove the given record from the hasMany relationship
    */
   async removeRelated(relationshipName: string, relatedModel: Model, options?: any): Promise<void> {
-    let descriptor = (<any>this.constructor)[relationshipName] || (<any>this.constructor)[pluralize(relationshipName)];
+    let descriptor = (<any>this.constructor)[pluralize(relationshipName)];
     await this.adapter.removeRelated(this, relationshipName, descriptor, relatedModel, options);
   }
 

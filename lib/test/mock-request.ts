@@ -52,7 +52,7 @@ export default class MockRequest extends Transform {
     }
   }
 
-  protected _transform(chunk: string | Buffer | {}, encoding: string, next: () => void) {
+  _transform(chunk: string | Buffer | {}, encoding: string, next: () => void) {
     if (typeof chunk !== 'string' && !Buffer.isBuffer(chunk)) {
       chunk = JSON.stringify(chunk);
     }

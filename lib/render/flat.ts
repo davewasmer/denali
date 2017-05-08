@@ -1,11 +1,10 @@
 import {
   isArray,
   assign,
-  mapValues,
-  forEach,
   isUndefined } from 'lodash';
 import * as assert from 'assert';
-import Serializer from './serializer';
+import { all } from 'bluebird';
+import Serializer, { RelationshipConfig } from './serializer';
 import Model from '../data/model';
 import Action, { RenderOptions } from '../runtime/action';
 import { RelationshipDescriptor } from '../data/descriptors';
@@ -36,25 +35,22 @@ export default abstract class FlatSerializer extends Serializer {
   /**
    * Renders a primary data payload (a model or array of models).
    */
-  protected renderPrimary(payload: Model|Model[], options?: any): any {
+  protected async renderPrimary(payload: Model|Model[], options?: any): Promise<any> {
     if (isArray(payload)) {
-      return payload.map((model) => {
-        return this.renderModel(model, options);
-      });
+      return await all(payload.map(async (model) => {
+        return await this.renderModel(model, options);
+      }));
     }
-    return this.renderModel(payload, options);
+    return await this.renderModel(payload, options);
   }
 
   /**
    * Renders an individual model
    */
-  renderModel(model: Model, options?: any): any {
+  async renderModel(model: Model, options?: any): Promise<any> {
     let id = model.id;
     let attributes = this.serializeAttributes(model, options);
-    let relationships = this.serializeRelationships(model, options);
-    relationships = mapValues(relationships, (relationship) => {
-      return relationship.data;
-    });
+    let relationships = await this.serializeRelationships(model, options);
     return assign({ id }, attributes, relationships);
   }
 
@@ -95,17 +91,18 @@ export default abstract class FlatSerializer extends Serializer {
   /**
    * Serialize the relationships for a given model
    */
-  protected serializeRelationships(model: any, options?: any): { [key: string]: any } {
+  protected async serializeRelationships(model: any, options?: any): Promise<{ [key: string]: any }> {
     let serializedRelationships: { [key: string ]: any } = {};
 
     // The result of this.relationships is a whitelist of which relationships
     // should be serialized, and the configuration for their serialization
-    forEach(this.relationships, (config, relationshipName) => {
+    for (let relationshipName in this.relationships) {
+      let config = this.relationships[relationshipName];
       let key = config.key || this.serializeRelationshipName(relationshipName);
       let descriptor = model.constructor[relationshipName];
       assert(descriptor, `You specified a '${ relationshipName }' relationship in your ${ model.constructor.type } serializer, but no such relationship is defined on the ${ model.constructor.type } model`);
-      serializedRelationships[key] = this.serializeRelationship(config, descriptor, model, options);
-    });
+      serializedRelationships[key] = await this.serializeRelationship(relationshipName, config, descriptor, model, options);
+    }
 
     return serializedRelationships;
   }
@@ -113,21 +110,26 @@ export default abstract class FlatSerializer extends Serializer {
   /**
    * Serializes a relationship
    */
-  protected serializeRelationship(config: any, descriptor: RelationshipDescriptor, model: any, options?: any) {
-    if (isArray(model)) {
-      if (model[0] instanceof Model) {
-        let relatedSerializer = this.container.lookup(`serializer:${ descriptor.type }`);
-        return model.map((relatedRecord) => {
-          return relatedSerializer.renderRecord(relatedRecord, options);
-        });
+  protected async serializeRelationship(relationship: string, config: RelationshipConfig, descriptor: RelationshipDescriptor, model: Model, options?: any) {
+    let relatedSerializer = this.container.lookup<FlatSerializer>(`serializer:${ descriptor.type }`, { loose: true }) || this.container.lookup<FlatSerializer>(`serializer:application`, { loose: true });
+    assert(relatedSerializer, `No serializer found for ${ descriptor.type }, and no fallback application serializer found either`);
+    if (descriptor.mode === 'hasMany') {
+      let relatedModels = <Model[]>await model.getRelated(relationship);
+      return await all(relatedModels.map(async (relatedModel: Model) => {
+        if (config.strategy === 'embed') {
+          return await relatedSerializer.renderModel(relatedModel, options);
+        } else if (config.strategy === 'id') {
+          return relatedModel.id;
+        }
+      }));
+    } else {
+      let relatedModel = <Model>await model.getRelated(relationship);
+      if (config.strategy === 'embed') {
+        return await relatedSerializer.renderModel(relatedModel, options);
+      } else if (config.strategy === 'id') {
+        return relatedModel.id;
       }
-      return model;
     }
-    if (model instanceof Model) {
-      let relatedSerializer = this.container.lookup(`serializer:${ descriptor.type }`);
-      return relatedSerializer.renderRecord(model, options);
-    }
-    return model;
   }
 
   /**

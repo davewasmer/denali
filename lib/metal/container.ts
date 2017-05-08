@@ -5,6 +5,7 @@ import {
   uniq,
   zipObject
 } from 'lodash';
+import * as assert from 'assert';
 import Resolver from './resolver';
 import { Dict, Constructor } from '../utils/types';
 import { isInjection } from './inject';
@@ -97,6 +98,8 @@ export default class Container {
   private options: Dict<ContainerOptions> = {
     action: { singleton: false, instantiate: true },
     config: { singleton: true, instantiate: false },
+    initializer: { singleton: true, instantiate: false },
+    'orm-adapter': { singleton: true, instantiate: true },
     serializer: { singleton: true, instantiate: true },
     service: { singleton: true, instantiate: true }
   };
@@ -132,6 +135,7 @@ export default class Container {
    */
   register(specifier: string, entry: any, options?: ContainerOptions) {
     this.registry[specifier] = entry;
+    entry.container = this;
     if (options) {
       forOwn(options, (value, key: keyof ContainerOptions) => {
         this.setOption(specifier, key, value);
@@ -305,6 +309,7 @@ export default class Container {
     return {
       class: klass,
       create(...args: any[]) {
+        assert(typeof klass === 'function', `Unable to instantiate ${ specifier } (it's not a constructor). Try setting the 'instantiate: false' option on this container entry to avoid instantiating it`);
         let instance = new klass(...args);
         (<any>instance).container = container;
         container.applyInjections(instance);
