@@ -9,7 +9,7 @@ module.exports = class DenaliBuilder extends Builder {
     return tree;
   }
 
-  transpileTree(tree) {
+  transpileTree(tree, dir) {
     const Funnel = require('broccoli-funnel');
     const MergeTree = require('broccoli-merge-trees');
     const Plugin = require('broccoli-plugin');
@@ -19,7 +19,7 @@ module.exports = class DenaliBuilder extends Builder {
       }
       build() {
         return new Promise((resolve, reject) => {
-          exec(path.join(process.cwd(), 'node_modules/.bin/tsc') + ' --outDir ' + this.outputPath, {
+          exec(path.join(dir, 'node_modules/.bin/tsc') + ' --outDir ' + this.outputPath, {
             cwd: this.inputPaths[0],
             stdio: 'inherit'
           }, (err, stdout, stderr) => {
@@ -36,7 +36,7 @@ module.exports = class DenaliBuilder extends Builder {
         });
       }
     }
-    let tsconfig = require(path.join(process.cwd(), 'tsconfig.json'));
+    let tsconfig = require(path.join(dir, 'tsconfig.json'));
     let transpiled = new TypescriptTree(tree, { tsconfig });
     let withoutTS = new Funnel(tree, {
       exclude: [ '**/*.ts' ]
