@@ -6,6 +6,8 @@ import * as typeis from 'type-is';
 import * as url from 'url';
 import * as http from 'http';
 import * as uuid from 'uuid';
+import { Socket } from 'net';
+import { Readable, Writable } from 'stream';
 import DenaliObject from '../metal/object';
 import Route from './route';
 
@@ -206,6 +208,38 @@ export default class Request extends DenaliObject {
     return dropRight(this.hostname.split('.'), 2);
   }
 
+  /*
+   * Additional public properties of the IncomingMessage object
+   */
+
+  get httpVersion(): string {
+    return this._incomingMessage.httpVersion;
+  }
+
+  get rawHeaders(): string[] {
+    return this._incomingMessage.rawHeaders;
+  }
+
+  get rawTrailers(): string[] {
+    return this._incomingMessage.rawTrailers;
+  }
+
+  get socket(): Socket {
+    return this._incomingMessage.socket;
+  }
+
+  get statusCode(): number {
+    return this._incomingMessage.statusCode;
+  }
+
+  get statusMessage(): string {
+    return this._incomingMessage.statusMessage;
+  }
+
+  get trailers(): { [key: string]: string } {
+    return this._incomingMessage.trailers;
+  }
+
   /**
    * Returns the best match for content types, or false if no match is possible. See the docs for
    * the `accepts` module on npm for more details.
@@ -234,4 +268,128 @@ export default class Request extends DenaliObject {
     return <string|boolean>typeis(this._incomingMessage, types);
   }
 
+  /*
+   * Below are methods from the IncomingMessage class, which includes the public methods
+   * of the Readable & EventEmitter interfaces as well
+   */
+
+  /*
+   * EventEmitter methods
+   */
+
+  addListener(eventName: any, listener: Function): Request {
+    this._incomingMessage.addListener(eventName, listener);
+    return this;
+  }
+
+  emit(eventName: any, ...args: any[]): boolean {
+    return this._incomingMessage.emit(eventName, ...args);
+  }
+
+  eventNames(): any[] {
+    return this._incomingMessage.eventNames();
+  }
+
+  getMaxListeners(): number {
+    return this._incomingMessage.getMaxListeners();
+  }
+
+  listenerCount(eventName: any): number {
+    return this._incomingMessage.listenerCount(eventName);
+  }
+
+  listeners(eventName: any): Function[] {
+    return this._incomingMessage.listeners(eventName);
+  }
+
+  on(eventName: any, listener: Function): Request {
+    this._incomingMessage.on(eventName, listener);
+    return this;
+  }
+
+  once(eventName: any, listener: Function): Request {
+    this._incomingMessage.once(eventName, listener);
+    return this;
+  }
+
+  prependListener(eventName: any, listener: Function): Request {
+    this._incomingMessage.prependListener(eventName, listener);
+    return this;
+  }
+
+  prependOnceListener(eventName: any, listener: Function): Request {
+    this._incomingMessage.prependOnceListener(eventName, listener);
+    return this;
+  }
+
+  removeAllListeners(eventName?: any): Request {
+    this._incomingMessage.removeAllListeners(eventName);
+    return this;
+  }
+
+  removeListener(eventName: any, listener: Function): Request {
+    this._incomingMessage.removeListener(eventName, listener);
+    return this;
+  }
+
+  setMaxListeners(n: number): Request {
+    this._incomingMessage.setMaxListeners(n);
+    return this;
+  }
+
+  /*
+   * Readable methods
+   */
+
+  isPaused(): boolean {
+    return this._incomingMessage.isPaused();
+  }
+
+  pause(): Request {
+    this._incomingMessage.pause();
+    return this;
+  }
+
+  pipe(destination: Writable, options?: Object): Writable {
+    return this._incomingMessage.pipe(destination, options);
+  }
+
+  read(size?: number): string | Buffer | null {
+    return this._incomingMessage.read(size);
+  }
+
+  resume(): Request {
+    this._incomingMessage.resume();
+    return this;
+  }
+
+  setEncoding(encoding: string): Request {
+    this._incomingMessage.setEncoding(encoding);
+    return this;
+  }
+
+  unpipe(destination?: Writable) {
+    return this._incomingMessage.unpipe(destination);
+  }
+
+  unshift(chunk: Buffer | string | any) {
+    return this._incomingMessage.unshift(chunk);
+  }
+
+  wrap(stream: Readable) {
+    return this._incomingMessage.wrap(stream);
+  }
+
+  /*
+   * IncomingMessage methods
+   */
+
+  destroy(error: Error) {
+    return this._incomingMessage.destroy(error);
+  }
+
+  setTimeout(msecs: number, callback: Function): Request {
+    this._incomingMessage.setTimeout(msecs, callback);
+    return this;
+  }
 }
