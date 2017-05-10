@@ -2,7 +2,7 @@ import {
   dropRight
 } from 'lodash';
 import * as accepts from 'accepts';
-import typeis from 'type-is';
+import * as typeis from 'type-is';
 import * as url from 'url';
 import * as http from 'http';
 import * as uuid from 'uuid';
@@ -113,7 +113,7 @@ export default class Request extends DenaliObject {
    * @since 0.1.0
    */
   get hostname(): string {
-    let host = this._incomingMessage.headers.Host;
+    let host = this.get('host');
     return (host || '').split(':')[0];
   }
 
@@ -173,7 +173,7 @@ export default class Request extends DenaliObject {
    * @since 0.1.0
    */
   get secure(): boolean {
-    return this.protocol === 'https';
+    return this.protocol === 'https:';
   }
 
   /**
