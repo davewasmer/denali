@@ -2,6 +2,8 @@
   "name": "<%= name %>",
   "version": "0.0.1",
   "scripts": {
+    "build": "denali build",
+    "prepublish": "in-publish && echo \"Use 'denali publish' instead.\" && exit 1 || not-in-publish",
     "test": "denali test"
   },
   "keywords": [
@@ -40,9 +42,5 @@
   "ava": {
     "plugins": [],
     "presets": []
-  },
-  "scripts": {
-    "build": "denali build",
-    "prepublish": "in-publish && echo \"Use 'denali publish' instead.\" && exit 1 || not-in-publish"
   }
 }
