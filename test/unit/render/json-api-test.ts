@@ -7,8 +7,8 @@ test.beforeEach(async (t) => {
   let container = t.context.container = new Container(__dirname);
   container.register('action:posts/show', Action);
   container.register('action:comments/show', Action);
-  container.register('router:main', class extends Router {});
-  let router = container.lookup<Router>('router:main');
+  container.register('app:router', class extends Router {});
+  let router = container.lookup<Router>('app:router');
   router.map((router) => {
     router.get('/posts', 'posts/show');
   });

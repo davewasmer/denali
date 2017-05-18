@@ -428,7 +428,7 @@ export default abstract class JSONAPISerializer extends Serializer {
    * the URL for a particular record maps to that type's `show` action, i.e. `books/show`.
    */
   protected linksForRecord(context: Context, record: Model): JsonApiLinks {
-    let router: Router = this.container.lookup('router:main');
+    let router: Router = this.container.lookup('app:router');
     let url = router.urlFor(`${ pluralize(record.type) }/show`, record);
     return typeof url === 'string' ? { self: url } : null;
   }
