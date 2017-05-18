@@ -4,6 +4,7 @@ import {
   camelCase
 } from 'lodash';
 import * as assert from 'assert';
+import * as typeis from 'type-is';
 import Parser from './parser';
 import Errors from '../runtime/errors';
 import { ResponderParams } from '../runtime/action';
@@ -26,31 +27,33 @@ export default class JSONAPIParser extends Parser {
    * etc), only modifying resource objects in place.
    */
   parse(request: Request): ResponderParams {
+    let result: ResponderParams = {
+      query: request.query,
+      headers: request.headers,
+      params: request.params
+    };
+
+    if (!typeis.hasBody(request) || !request.body) {
+      return result;
+    }
+
     try {
       assert(request.get('content-type') === 'application/vnd.api+json', 'Invalid content type - must have `application/vnd.api+json` as the request content type');
+      assert(request.body.data, 'Invalid JSON-API document (missing top level `data` object - see http://jsonapi.org/format/#document-top-level)');
 
-      let result: ResponderParams = {};
+      let parseResource = this.parseResource.bind(this);
 
-      if (request.body) {
-        assert(request.body.data, 'Invalid JSON-API document (missing top level `data` object - see http://jsonapi.org/format/#document-top-level)');
-        let parseResource = this.parseResource.bind(this);
-
-        if (request.body.data) {
-          if (!isArray(request.body.data)) {
-            result.body = parseResource(request.body.data);
-          } else {
-            result.body = request.body.data.map(parseResource);
-          }
-        }
-
-        if (request.body.included) {
-          result.included = request.body.included.map(parseResource);
+      if (request.body.data) {
+        if (!isArray(request.body.data)) {
+          result.body = parseResource(request.body.data);
+        } else {
+          result.body = request.body.data.map(parseResource);
         }
       }
 
-      result.query = request.query;
-      result.headers = request.headers;
-      result.params = request.params;
+      if (request.body.included) {
+        result.included = request.body.included.map(parseResource);
+      }
 
       return result;
     } catch (e) {

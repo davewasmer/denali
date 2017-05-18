@@ -48,3 +48,13 @@ test('returns responder params with included records', async (t) => {
   t.true(result.body.foo);
   t.true(result.included[0].buzz);
 });
+
+test('doesn\'t attempt to parse and returns no body if request body empty', (t) => {
+  let parser = new JSONAPIParser();
+  let mocked = new MockRequest({
+    method: 'GET'
+  });
+  let req = new Request(<any>mocked);
+  let result = parser.parse(req);
+  t.true(typeof result.body === 'undefined');
+});
