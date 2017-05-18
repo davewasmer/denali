@@ -240,6 +240,10 @@ export default class Request extends DenaliObject {
     return this._incomingMessage.trailers;
   }
 
+  get connection(): Socket {
+    return this._incomingMessage.connection;
+  }
+
   /**
    * Returns the best match for content types, or false if no match is possible. See the docs for
    * the `accepts` module on npm for more details.

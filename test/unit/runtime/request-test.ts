@@ -162,7 +162,7 @@ test('is returns correct values', (t) => {
 // to the IncomingMessage object
 
 test('incoming message properties are passed through', (t) => {
-  t.plan(7);
+  t.plan(8);
 
   let props = {
     httpVersion: 0,
@@ -171,7 +171,8 @@ test('incoming message properties are passed through', (t) => {
     socket: 3,
     statusCode: 4,
     statusMessage: 5,
-    trailers: 6
+    trailers: 6,
+    connection: 7
   };
   // Use cloneDeep because props is mutated
   let req = (<any>mockBasic(cloneDeep(props)));
