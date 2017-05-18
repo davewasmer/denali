@@ -140,7 +140,7 @@ abstract class ORMAdapter extends DenaliObject {
    */
   async defineModels(models: typeof Model[]): Promise<void> {
     // defaults to no-op
-  };
+  }
 
   /**
    * Start a transaction that will wrap a test, and be rolled back afterwards. If the data store

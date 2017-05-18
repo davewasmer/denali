@@ -18,7 +18,7 @@ export default {
     let models: { [modelName: string]: typeof Model } = application.container.lookupAll('model');
     let modelsGroupedByAdapter = new Map();
     forEach(models, (ModelClass, modelName) => {
-      if (ModelClass.abstract) {
+      if (ModelClass.hasOwnProperty('abstract') && ModelClass.abstract) {
         return;
       }
       let Adapter = container.lookup(`orm-adapter:${ modelName }`, { loose: true }) || container.lookup('orm-adapter:application');
