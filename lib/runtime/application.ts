@@ -99,7 +99,7 @@ export default class Application extends Addon {
     this.drainers = [];
 
     // Setup some helpful container shortcuts
-    this.container.register('app:main', this);
+    this.container.register('app:main', this, { singleton: true, instantiate: false });
 
     // Find addons for this application
     this.addons = this.buildAddons(options.addons || []);
