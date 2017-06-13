@@ -28,6 +28,7 @@ test('runs middleware before determining routing', async (t) => {
   container.register('app:router', Router);
   container.register('parser:application', FlatParser);
   container.register('config:environment', { environment: 'development' });
+  container.register('service:db', {}, { instantiate: false });
   container.register('action:error', class TestAction extends Action {
     respond() {
       count += 1;

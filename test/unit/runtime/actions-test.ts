@@ -20,6 +20,7 @@ test.beforeEach((t) => {
   let container = t.context.container = new Container(__dirname);
   container.register('parser:application', FlatParser);
   container.register('serializer:application', RawSerializer);
+  container.register('service:db', {}, { instantiate: false });
   container.register('config:environment', {});
   t.context.runAction = async (options?: any) => {
     let response = new MockResponse();
