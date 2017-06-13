@@ -13,7 +13,8 @@ async function finderInvokesAdapter(t: TestContext & Context<any>, finder: strin
     [finder]() {
       t.pass();
       return adapterReturn;
-    }
+    },
+    getAttribute(): any { return null; }
   }, { instantiate: false, singleton: true });
   let klass = <typeof Model>container.factoryFor<Model>('model:post').class;
   await (<any>klass)[finder](container, ...args);
@@ -32,7 +33,8 @@ async function finderReturns(t: TestContext & Context<any>, options: {
   container.register('model:post', class Post extends Model {});
   container.register('orm-adapter:post', {
     buildRecord() { return {}; },
-    [options.finder]: options.adapterMethod
+    [options.finder]: options.adapterMethod,
+    getAttribute(): any { return null; },
   }, { instantiate: false, singleton: true });
   let klass = <typeof Model>container.factoryFor<Model>('model:post').class;
   let result = await (<any>klass)[options.finder](container, options.arg);
