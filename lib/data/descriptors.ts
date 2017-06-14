@@ -18,7 +18,7 @@ export class Descriptor {
   /**
    * Creates an instance of Descriptor.
    */
-  constructor(type: string, options?: any) {
+  constructor(type: string, options: any = {}) {
     this.type = type;
     this.options = options;
   }
