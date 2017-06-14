@@ -13,6 +13,12 @@ import Container from '../metal/container';
 const debug = createDebug('denali:model');
 
 /**
+ * List of private properties on the Denali model class itself. Used for
+ * determining which properties should or shouldn't be returned by the proxy.
+ */
+const privateProps: String[] = [ 'record' ];
+
+/**
  * The Model class is the core of Denali's unique approach to data and ORMs. It acts as a wrapper
  * and translation layer that provides a unified interface to access and manipulate data, but
  * translates those interactions into ORM specific operations via ORM adapters.
@@ -169,49 +175,38 @@ export default class Model extends DenaliObject {
     return new Proxy(this, {
 
       get(model: Model, property: string): any {
-        if (typeof property === 'string') {
-          // Return the attribute value if that's what is requested
-          let descriptor = (<any>model.constructor)[property];
-          if (descriptor && descriptor.isAttribute) {
-            return model.adapter.getAttribute(model, property);
-          }
-          // Forward relationship related methods to their generic counterparts
-          let relatedMethodParts = property.match(/^(get|set|add|remove)(\w+)/);
-          if (relatedMethodParts) {
-            let [ , operation, relationshipName ] = relatedMethodParts;
-            relationshipName = lowerFirst(relationshipName);
-            descriptor = (<any>model.constructor)[relationshipName] || (<any>model.constructor)[pluralize(relationshipName)];
-            if (descriptor && descriptor.isRelationship) {
-              return model[`${ operation }Related`].bind(model, relationshipName);
-            }
+        if (isAttribute(model, property)) {
+          return model.adapter.getAttribute(model, property);
+        }
+
+        let relatedMethodParts = property.match(/^(get|set|add|remove)(\w+)/);
+        if (relatedMethodParts) {
+          let [ , operation, relationshipName ] = relatedMethodParts;
+          relationshipName = lowerFirst(relationshipName);
+          if (isRelationship(model, relationshipName)) {
+            return model[`${ operation }Related`].bind(model, relationshipName);
           }
         }
-        // We double check getAttribute here because it's possible the user supplied some non-attribute
-        // properties during creation. If so, these were dumped into the `buildRecord` method, which
-        // may have bulk assigned them to the underlying record instance (if the ORM allows it). So
-        // we defer there first, just in case. This is a nasty hack - we need to fix how we handle
-        // this.
-        return model.adapter.getAttribute(model, property) || model[property];
+
+        if (isModelProperty(model, property)) {
+          return model[property];
+        }
+
+        return model.adapter.getAttribute(model, property);
       },
 
       set(model: Model, property: string, value: any): boolean {
-        // Set attribute values
-        let descriptor = (<any>model.constructor)[property];
-        if (descriptor && descriptor.isAttribute) {
+        if (isAttribute(model, property)) {
           return model.adapter.setAttribute(model, property, value);
         }
-        // Otherwise just set the model property directly
         model[property] = value;
         return true;
       },
 
       deleteProperty(model: Model, property: string): boolean {
-        // Delete the attribute
-        let descriptor = (<any>model.constructor)[property];
-        if (descriptor && descriptor.isAttribute) {
+        if (isAttribute(model, property)) {
           return model.adapter.deleteAttribute(model, property);
         }
-        // Otherwise just delete the model property directly
         return delete model[property];
       }
 
@@ -336,4 +331,18 @@ export default class Model extends DenaliObject {
     });
   }
 
+}
+
+export function isAttribute(model: Model, property: string): boolean {
+  let descriptor = (<any>model.constructor)[property];
+  return descriptor && descriptor.isAttribute;
+}
+
+export function isRelationship(model: Model, property: string): boolean {
+  let descriptor = (<any>model.constructor)[property] || (<any>model.constructor)[pluralize(property)];
+  return descriptor && descriptor.isRelationship;
+}
+
+export function isModelProperty(model: Model, property: string): boolean {
+  return model[property] !== undefined && !privateProps.includes(property);
 }
