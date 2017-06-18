@@ -20,7 +20,7 @@ module.exports = class DenaliBuilder extends Builder {
       build() {
         return new Promise((resolve, reject) => {
           exec(path.join(dir, 'node_modules/.bin/tsc') + ' --outDir ' + this.outputPath, {
-            cwd: this.inputPaths[0],
+            cwd: dir,
             stdio: 'inherit'
           }, (err, stdout, stderr) => {
             if (err) {
