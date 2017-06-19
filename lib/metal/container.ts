@@ -126,7 +126,8 @@ export default class Container {
     model: { singleton: false, instantiate: false },
     parser: { singleton: true, instantiate: true },
     serializer: { singleton: true, instantiate: true },
-    service: { singleton: true, instantiate: true }
+    service: { singleton: true, instantiate: true },
+    view: { singleton: true, instantiate: true }
   };
 
   /**
