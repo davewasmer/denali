@@ -58,7 +58,7 @@ export default class DatabaseService extends Service {
   }
 
   protected lookupAdapter(modelType: string) {
-    return this.container.lookup<ORMAdapter>(`orm-adapter:${ modelType }`) || this.container.lookup<ORMAdapter>('orm-adapter:application');
+    return this.container.lookup<ORMAdapter>(`orm-adapter:${ modelType }`, { loose: true }) || this.container.lookup<ORMAdapter>('orm-adapter:application');
   }
 
 }
