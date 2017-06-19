@@ -1,5 +1,4 @@
-import { Command, Blueprint } from 'denali-cli';
-import unwrap from '../lib/utils/unwrap';
+import { Command, Blueprint, unwrap } from 'denali-cli';
 import * as yargs from 'yargs';
 
 /**

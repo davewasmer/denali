@@ -1,6 +1,6 @@
 import test from 'ava';
 import * as dedent from 'dedent-js';
-import { CommandAcceptanceTest } from 'denali';
+import { CommandAcceptanceTest } from 'denali-cli';
 
 test('prints list of configured routes', async (t) => {
   let generate = new CommandAcceptanceTest('routes', { name: 'routes-command' });

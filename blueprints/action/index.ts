@@ -2,8 +2,7 @@ import {
   upperFirst,
   camelCase
 } from 'lodash';
-import { Blueprint } from 'denali-cli';
-import unwrap from '../../lib/utils/unwrap';
+import { Blueprint, unwrap } from 'denali-cli';
 
 /**
  * Generate an new action class + tests.

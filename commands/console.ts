@@ -2,10 +2,9 @@ import {
   assign
 } from 'lodash';
 import * as repl from 'repl';
-import unwrap from '../lib/utils/unwrap';
 import rewrap from '../lib/utils/rewrap';
 import * as chalk from 'chalk';
-import { ui, Command, Project } from 'denali-cli';
+import { ui, Command, Project, unwrap } from 'denali-cli';
 
 /**
  * Launch a REPL with your application loaded

@@ -48,8 +48,6 @@ import Service from './runtime/service';
 
 // Test
 import appAcceptanceTest, { AppAcceptance } from './test/app-acceptance';
-import BlueprintAcceptanceTest from './test/blueprint-acceptance';
-import CommandAcceptanceTest from './test/command-acceptance';
 import MockRequest from './test/mock-request';
 import MockResponse from './test/mock-response';
 
@@ -103,8 +101,6 @@ export {
   // Test
   AppAcceptance,
   appAcceptanceTest,
-  BlueprintAcceptanceTest,
-  CommandAcceptanceTest,
   MockRequest,
   MockResponse
 };

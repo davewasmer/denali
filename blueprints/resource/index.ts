@@ -5,8 +5,7 @@ import {
   kebabCase
 } from 'lodash';
 import { singularize, pluralize } from 'inflection';
-import { Blueprint } from 'denali-cli';
-import unwrap from '../../lib/utils/unwrap';
+import { Blueprint, unwrap } from 'denali-cli';
 
 /**
  * Generates a model, serializer, CRUD actions, and tests for a resource

@@ -1,7 +1,6 @@
-import { Blueprint } from 'denali-cli';
+import { Blueprint, unwrap } from 'denali-cli';
 import * as moment from 'moment';
 import * as assert from 'assert';
-import unwrap from '../../lib/utils/unwrap';
 
 /**
  * Generates a database schema migration

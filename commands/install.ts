@@ -1,7 +1,6 @@
-import unwrap from '../lib/utils/unwrap';
 import * as Bluebird from 'bluebird';
 import * as cmdExists from 'command-exists';
-import { ui, spinner, Command, Blueprint } from 'denali-cli';
+import { ui, spinner, Command, Blueprint, unwrap } from 'denali-cli';
 import { execSync as run } from 'child_process';
 
 const commandExists = Bluebird.promisify<boolean, string>(cmdExists);

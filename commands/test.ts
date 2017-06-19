@@ -2,9 +2,8 @@ import {
   assign
 } from 'lodash';
 import * as path from 'path';
-import unwrap from '../lib/utils/unwrap';
 import { spawn, ChildProcess } from 'child_process';
-import { ui, Command, Project } from 'denali-cli';
+import { ui, Command, Project, unwrap } from 'denali-cli';
 
 /**
  * Run your app's test suite

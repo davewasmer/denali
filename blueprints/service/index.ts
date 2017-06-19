@@ -1,5 +1,4 @@
-import { Blueprint } from 'denali-cli';
-import unwrap from '../../lib/utils/unwrap';
+import { Blueprint, unwrap } from 'denali-cli';
 
 /**
  * Generates a blank service

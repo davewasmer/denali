@@ -1,4 +1,4 @@
-import unwrap from './unwrap';
+import { unwrap } from 'denali-cli';
 import * as wrap from 'wordwrap';
 import * as tty from 'tty';
 

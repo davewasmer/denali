@@ -1,10 +1,9 @@
-import { Blueprint } from 'denali-cli';
+import { Blueprint, unwrap } from 'denali-cli';
 import { singularize } from 'inflection';
 import {
   upperFirst,
   camelCase
 } from 'lodash';
-import unwrap from '../../lib/utils/unwrap';
 
 /**
  * Generates a blank ORM adapter with stubs for all the required methods

@@ -89,7 +89,7 @@
     "dag-map": "^2.0.2",
     "debug": "^2.6.6",
     "dedent-js": "^1.0.1",
-    "denali-cli": "~0.0.11",
+    "denali-cli": "~0.0.12",
     "express-force-ssl": "^0.3.0",
     "find-plugins": "^1.0.1",
     "findup-sync": "^1.0.0",
