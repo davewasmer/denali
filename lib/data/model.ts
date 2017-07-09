@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as createDebug from 'debug';
 import { pluralize, singularize } from 'inflection';
-import { startCase } from 'lodash';
+import { startCase, upperFirst } from 'lodash';
 import DenaliObject from '../metal/object';
 import Container, { onLoad } from '../metal/container';
 import ORMAdapter from './orm-adapter';
@@ -54,7 +54,7 @@ export default class Model extends DenaliObject {
     });
     // Define relationship operations
     ModelClass.mapRelationshipDescriptors((descriptor, relationshipName) => {
-      let methodRoot = startCase(relationshipName);
+      let methodRoot = upperFirst(relationshipName);
       // getAuthor(options?)
       Object.defineProperty(proto, `get${methodRoot}`, {
         configurable: true,
