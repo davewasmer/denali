@@ -207,6 +207,7 @@ export default class TestCommand extends Command {
        } else {
          process.exitCode = code == null ? 1 : code;
          ui.info(`===> exiting with ${ process.exitCode }`);
+         process.exit(process.exitCode);
        }
     });
   }
