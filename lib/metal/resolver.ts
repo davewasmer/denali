@@ -11,8 +11,8 @@ import requireDir from '../utils/require-dir';
 import * as assert from 'assert';
 import * as createDebug from 'debug';
 
-interface RetrieveMethod {
-  (type: string, entry: string): any;
+interface RetrieveMethod<T> {
+  (type: string, entry: string): T;
 }
 
 export interface AvailableForTypeMethod {
@@ -55,7 +55,7 @@ export default class Resolver {
    * members, then falls back to type specific retrieve methods that typically find the matching
    * file on the filesystem.
    */
-  retrieve(specifier: string) {
+  retrieve<T>(specifier: string): T {
     assert(specifier.includes(':'), 'Container specifiers must be in "type:entry" format');
     this.debug(`retrieving ${ specifier }`);
     let [ type, entry ] = specifier.split(':');
@@ -63,7 +63,7 @@ export default class Resolver {
       this.debug(`cache hit, returning cached value`);
       return this.registry.get(specifier);
     }
-    let retrieveMethod = <RetrieveMethod>this[`retrieve${ upperFirst(camelCase(type)) }`];
+    let retrieveMethod = <RetrieveMethod<T>>this[`retrieve${ upperFirst(camelCase(type)) }`];
     if (!retrieveMethod) {
       retrieveMethod = this.retrieveOther;
     }

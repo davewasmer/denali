@@ -21,6 +21,87 @@ import { Vertex } from '../utils/topsort';
 
 const debug = createDebug('denali:application');
 
+export interface Config {
+  /**
+   * THe name of the current environment, i.e. 'developement', 'test', 'production'
+   */
+  environment: string;
+  logging?: {
+    /**
+     * Should logs show debug information? If true, errors will log out as much detail as possible.
+     */
+    showDebuggingInfo?: boolean;
+    /**
+     * A morgan log format string to use
+     */
+    format?: string;
+    /**
+     * A function to determine whether or not logging should be skipped for a given request - see
+     * morgan docs for details
+     */
+    skip?(): boolean;
+  };
+  /**
+   * Cookie parser configuration - see cookie-parser for details
+   */
+  cookies?: any;
+  /**
+   * CORS configuration - see cors middleware package for details
+   */
+  cors?: any;
+  bodyParser?: {
+    /**
+     * What content-types should the body parser try to parse as JSON?
+     */
+    type?: string;
+  };
+  migrations?: {
+    /**
+     * Knex configuration information for running migrations
+     */
+    db?: any;
+  }
+  server: {
+    /**
+     * THe port number that the application should start up on
+     */
+    port: number;
+    /**
+     * Should the application start in detached mode? I.e. without attaching to a port?
+     */
+    detached?: boolean;
+    /**
+     * SSL/TLS certificate files. Note these should be the file contents, not the file paths
+     */
+    ssl?: {
+      key: Buffer | string;
+      cert: Buffer | string;
+    }
+  },
+  /**
+   * Connection and configuration for your ORM adapter - see your ORM adapter docs for
+   * details
+   */
+  database?: any;
+  [key: string]: any;
+}
+
+export interface AppConfigBuilder {
+  (environment: string, container: Container): Config;
+}
+
+export interface AddonConfigBuilder {
+  (environment: string, container: Container, config: any): void;
+}
+
+export interface MiddlewareBuilder {
+  (router: Router, application: Application): void;
+}
+
+export interface RoutesMap {
+  (router: Router, application: Application): void;
+}
+
 /**
  * Options for instantiating an application
  */
@@ -167,14 +248,19 @@ export default class Application extends Addon {
    *   are.
    */
   protected generateConfig(): any {
-    let appConfig = this.resolver.retrieve('config:environment') || constant({});
-    let config = appConfig(this.environment);
+    let appConfig = this.resolver.retrieve<AppConfigBuilder>('config:environment') || <AppConfigBuilder>constant({
+      environment: 'development',
+      server: {
+        port: 3000
+      }
+    });
+    let config = appConfig(this.environment, this.container);
     config.environment = this.environment;
     this.container.register('config:environment', config);
     this.addons.forEach((addon) => {
-      let addonConfig = addon.resolver.retrieve('config:environment');
+      let addonConfig = addon.resolver.retrieve<AddonConfigBuilder>('config:environment');
       if (addonConfig) {
-        addonConfig(this.environment, config);
+        addonConfig(this.environment, this.container, config);
       }
     });
     return config;
@@ -186,19 +272,19 @@ export default class Application extends Addon {
   protected compileRouter(): void {
     // Load addon middleware first
     this.addons.forEach((addon) => {
-      let addonMiddleware = addon.resolver.retrieve('config:middleware') || noop;
+      let addonMiddleware = addon.resolver.retrieve<MiddlewareBuilder>('config:middleware') || noop;
       addonMiddleware(this.router, this);
     });
     // Then load app middleware
-    let appMiddleware = this.resolver.retrieve('config:middleware') || noop;
+    let appMiddleware = this.resolver.retrieve<MiddlewareBuilder>('config:middleware') || noop;
     appMiddleware(this.router, this);
     // Load app routes first so they have precedence
-    let appRoutes = this.resolver.retrieve('config:routes') || noop;
+    let appRoutes = this.resolver.retrieve<RoutesMap>('config:routes') || noop;
     appRoutes(this.router, this);
     // Load addon routes in reverse order so routing precedence matches addon load order
     this.addons.reverse().forEach((addon) => {
-      let addonRoutes = addon.resolver.retrieve('config:routes') || noop;
-      addonRoutes(this.router);
+      let addonRoutes = addon.resolver.retrieve<RoutesMap>('config:routes') || noop;
+      addonRoutes(this.router, this);
     });
   }
 
