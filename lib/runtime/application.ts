@@ -265,6 +265,7 @@ export default class Application extends Addon {
     await all(this.addons.map(async (addon) => {
       await addon.shutdown(this);
     }));
+    this.container.teardown();
   }
 
 }

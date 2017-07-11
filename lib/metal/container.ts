@@ -234,6 +234,7 @@ export default class Container {
     if (this.getOption(specifier, 'instantiate') === false) {
       let klass = (<any>factory).class;
       if (!singleton) {
+        this.lookups[specifier] = klass;
         return klass;
       }
       let instance = klass;
@@ -319,6 +320,17 @@ export default class Container {
     delete this.lookups[specifier];
     delete this.classLookups[specifier];
     delete this.factoryLookups[specifier];
+  }
+
+  /**
+   * Given container-managed singletons a chance to cleanup on application shutdown
+   */
+  teardown() {
+    forEach(this.lookups, (instance: DenaliObject, specifier) => {
+      if (typeof instance.teardown === 'function') {
+        instance.teardown();
+      }
+    });
   }
 
   /**

@@ -36,4 +36,11 @@ export default class DenaliObject {
     // Default is no-op
   }
 
+  /**
+   * A hook invoked when an application is torn down. Only invoked on singletons stored in the container.
+   */
+  teardown(): void {
+    // Default is no-op
+  }
+
 }

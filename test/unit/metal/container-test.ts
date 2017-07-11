@@ -128,3 +128,15 @@ test('properties marked as injections are injected', async (t) => {
 
   t.true(foo.bar.isPresent, 'injection was applied');
 });
+
+test('tears down singletons', async (t) => {
+  t.plan(1);
+  let container = new Container(dummyAppPath);
+  container.register('foo:main', {
+    teardown() {
+      t.pass();
+    }
+  }, { singleton: false, instantiate: false });
+  container.lookup('foo:main');
+  container.teardown();
+});
