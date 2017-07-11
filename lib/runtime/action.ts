@@ -22,6 +22,7 @@ import inject from '../metal/inject';
 import Serializer from '../render/serializer';
 import DatabaseService from '../data/database';
 import Logger from './logger';
+import { RelationshipConfigs } from '../render/serializer';
 
 const debug = createDebug('denali:action');
 
@@ -64,6 +65,14 @@ export interface RenderOptions {
    * another kind of object, it will fall back to the application serializer.
    */
   serializer?: string;
+  /**
+   * Override which attributes should be serialized.
+   */
+  attributes?: string[];
+  /**
+   * Override which relationships should be serialized.
+   */
+  relationships?: RelationshipConfigs;
 }
 
 /**

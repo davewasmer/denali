@@ -2,6 +2,7 @@ import View from './view';
 import { ServerResponse } from 'http';
 import Action, { RenderOptions } from '../runtime/action';
 import Errors from '../runtime/errors';
+import result from '../utils/result';
 
 export interface RelationshipConfig {
   strategy?: 'embed' | 'id' | string;
@@ -31,6 +32,14 @@ export default abstract class Serializer extends View {
   protected abstract attributes: ((...args: any[]) => string[]) | string[];
 
   /**
+   * Convenience method to encapsulate standard attribute whitelist behavior - render options
+   * take precedence, then allow this.attributes to be a function or straight definition
+   */
+  protected attributesToSerialize(action: Action, options: RenderOptions) {
+    return options.attributes || result(this.attributes, action);
+  }
+
+  /**
    * An object with configuration on how to serialize relationships. Relationships that have no
    * configuration present are omitted from the final rendered payload.
    *
@@ -46,6 +55,14 @@ export default abstract class Serializer extends View {
    * What the embedded records or ids look like is up to each serializer to determine.
    */
   protected abstract relationships: ((...args: any[]) => RelationshipConfigs) | RelationshipConfigs;
+
+  /**
+   * Convenience method to encapsulate standard relationship whitelist behavior - render options
+   * take precedence, then allow this.relationships to be a function or straight definition
+   */
+  protected relationshipsToSerialize(action: Action, options: RenderOptions) {
+    return options.relationships || result(this.relationships, action);
+  }
 
   async render(action: Action, response: ServerResponse, body: any, options: RenderOptions): Promise<void> {
     response.setHeader('Content-type', this.contentType);

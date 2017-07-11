@@ -228,6 +228,26 @@ test('only renders whitelisted attributes', async (t) => {
   t.falsy(result.data.attributes.content);
 });
 
+test('allows render options to override class-level attributes whitelist', async (t) => {
+  let container = <Container>t.context.container;
+  container.register('serializer:post', class PostSerializer extends JSONAPISerializer {
+    attributes = [ 'title' ];
+    relationships = {};
+  });
+  container.register('model:post', class Post extends Model {
+    static title = attr('string');
+    static content = attr('string');
+  });
+  let Post = container.factoryFor('model:post');
+  let serializer = container.lookup('serializer:post');
+
+  let post = await Post.create({ title: 'foo', content: 'bar' }).save();
+  let result = await serializer.serialize(post, <any>{}, { attributes: [ 'content' ] });
+
+  t.is(result.data.attributes.content, 'bar');
+  t.falsy(result.data.attributes.title);
+});
+
 test('only renders whitelisted relationships', async (t) => {
   let container = <Container>t.context.container;
   container.register('serializer:post', class PostSerializer extends JSONAPISerializer {
@@ -256,6 +276,45 @@ test('only renders whitelisted relationships', async (t) => {
 
   let post = await Post.create({ title: 'foo' }).save();
   let result = await serializer.serialize(post, <any>{}, {});
+
+  t.true(isArray(result.data.relationships.comments.data));
+  t.falsy(result.data.relationships.author);
+});
+
+test('allows render options to override class-level relationships whitelist', async (t) => {
+  let container = <Container>t.context.container;
+  container.register('serializer:post', class PostSerializer extends JSONAPISerializer {
+    attributes = [ 'title' ];
+    relationships = {
+      author: {
+        strategy: 'id'
+      }
+    };
+  });
+  container.register('serializer:comments', class CommentSerializer extends JSONAPISerializer {
+    attributes = [ 'title' ];
+    relationships = {};
+  });
+  container.register('model:post', class Post extends Model {
+    static title = attr('string');
+    static author = hasOne('user');
+    static comments = hasMany('comment');
+  });
+  container.register('model:comment', class Comment extends Model {
+    static text = attr('string');
+  });
+  container.register('model:user', class Comment extends Model {});
+  let Post = container.factoryFor('model:post');
+  let serializer = container.lookup('serializer:post');
+
+  let post = await Post.create({ title: 'foo' }).save();
+  let result = await serializer.serialize(post, <any>{}, {
+    relationships: {
+      comments: {
+        strategy: 'id'
+      }
+    }
+  });
 
   t.true(isArray(result.data.relationships.comments.data));
   t.falsy(result.data.relationships.author);

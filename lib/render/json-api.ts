@@ -16,7 +16,6 @@ import { RelationshipDescriptor } from '../data/descriptors';
 import { RelationshipConfig } from './serializer';
 import { map } from 'bluebird';
 import setIfNotEmpty from '../utils/set-if-not-empty';
-import result from '../utils/result';
 
 /**
  * Ensures that the value is only set if it exists, so we avoid creating iterable keys on obj for
@@ -137,7 +136,7 @@ export type JsonApiLink = string | {
   meta: JsonApiMeta
 };
 
-export interface Options {
+export interface Options extends RenderOptions {
   /**
    * An array of Models you want to ensure are included in the "included" sideload. Note that the
    * spec requires "full-linkage" - i.e. any Models you include here must be referenced by a
@@ -152,10 +151,6 @@ export interface Options {
    * Any top level links to send with the response.
    */
   links?: JsonApiLinks;
-  /**
-   * Configuration for each relationship.
-   */
-  relationships?: any;
   [key: string]: any;
 }
 
@@ -304,7 +299,7 @@ export default abstract class JSONAPISerializer extends Serializer {
    */
   protected attributesForRecord(context: Context, record: Model): JsonApiAttributes {
     let serializedAttributes: JsonApiAttributes = {};
-    let attributes = result(this.attributes, context.action);
+    let attributes = this.attributesToSerialize(context.action, context.options);
     attributes.forEach((attributeName) => {
       let key = this.serializeAttributeName(context, attributeName);
       let rawValue = record[attributeName];
@@ -340,11 +335,11 @@ export default abstract class JSONAPISerializer extends Serializer {
    */
   protected async relationshipsForRecord(context: Context, record: Model): Promise<JsonApiRelationships> {
     let serializedRelationships: JsonApiRelationships = {};
-    let relationships = result(this.relationships, context.action);
+    let relationships = this.relationshipsToSerialize(context.action, context.options);
 
     // The result of this.relationships is a whitelist of which relationships should be serialized,
     // and the configuration for their serialization
-    let relationshipNames = Object.keys(this.relationships);
+    let relationshipNames = Object.keys(relationships);
     for (let name of relationshipNames) {
       let config = relationships[name];
       let key = config.key || this.serializeRelationshipName(context, name);
@@ -447,6 +442,7 @@ export default abstract class JSONAPISerializer extends Serializer {
    * Sideloads a record into the top level "included" array
    */
   protected async includeRecord(context: Context, name: string, relatedRecord: Model, config: RelationshipConfig, descriptor: RelationshipDescriptor): Promise<void> {
+    assert(relatedRecord, 'You tried to sideload an included record, but the record itself was not provided.');
     if (!isArray(context.document.included)) {
       context.document.included = [];
     }

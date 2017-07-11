@@ -7,7 +7,6 @@ import * as assert from 'assert';
 import { all } from 'bluebird';
 import Serializer, { RelationshipConfig } from './serializer';
 import Model from '../data/model';
-import result from '../utils/result';
 import Action, { RenderOptions } from '../runtime/action';
 import { RelationshipDescriptor } from '../data/descriptors';
 
@@ -37,7 +36,7 @@ export default abstract class FlatSerializer extends Serializer {
   /**
    * Renders a primary data payload (a model or array of models).
    */
-  protected async renderPrimary(payload: Model|Model[], action: Action, options?: any): Promise<any> {
+  protected async renderPrimary(payload: Model|Model[], action: Action, options: RenderOptions): Promise<any> {
     if (isArray(payload)) {
       return await all(payload.map(async (model) => {
         return await this.renderModel(model, action, options);
@@ -49,7 +48,7 @@ export default abstract class FlatSerializer extends Serializer {
   /**
    * Renders an individual model
    */
-  async renderModel(model: Model, action: Action, options?: any): Promise<any> {
+  async renderModel(model: Model, action: Action, options: RenderOptions): Promise<any> {
     let id = model.id;
     let attributes = this.serializeAttributes(model, action, options);
     let relationships = await this.serializeRelationships(model, action, options);
@@ -59,9 +58,9 @@ export default abstract class FlatSerializer extends Serializer {
   /**
    * Serialize the attributes for a given model
    */
-  protected serializeAttributes(model: Model, action: Action, options?: any): any {
+  protected serializeAttributes(model: Model, action: Action, options: RenderOptions): any {
     let serializedAttributes: any = {};
-    let attributes = result(this.attributes, action);
+    let attributes = this.attributesToSerialize(action, options); 
     attributes.forEach((attributeName) => {
       let key = this.serializeAttributeName(attributeName);
       let rawValue = model[attributeName];
@@ -94,9 +93,9 @@ export default abstract class FlatSerializer extends Serializer {
   /**
    * Serialize the relationships for a given model
    */
-  protected async serializeRelationships(model: any, action: Action, options?: any): Promise<{ [key: string]: any }> {
+  protected async serializeRelationships(model: any, action: Action, options: RenderOptions): Promise<{ [key: string]: any }> {
     let serializedRelationships: { [key: string ]: any } = {};
-    let relationships = result(this.relationships, action);
+    let relationships = this.relationshipsToSerialize(action, options); 
 
     // The result of this.relationships is a whitelist of which relationships
     // should be serialized, and the configuration for their serialization
@@ -105,7 +104,7 @@ export default abstract class FlatSerializer extends Serializer {
       let key = config.key || this.serializeRelationshipName(relationshipName);
       let descriptor = model.constructor[relationshipName];
       assert(descriptor, `You specified a '${ relationshipName }' relationship in your ${ model.constructor.type } serializer, but no such relationship is defined on the ${ model.constructor.type } model`);
-      serializedRelationships[key] = await this.serializeRelationship(relationshipName, config, descriptor, model, options);
+      serializedRelationships[key] = await this.serializeRelationship(relationshipName, config, descriptor, model, action, options);
     }
 
     return serializedRelationships;
@@ -114,14 +113,14 @@ export default abstract class FlatSerializer extends Serializer {
   /**
    * Serializes a relationship
    */
-  protected async serializeRelationship(relationship: string, config: RelationshipConfig, descriptor: RelationshipDescriptor, model: Model, options?: any) {
+  protected async serializeRelationship(relationship: string, config: RelationshipConfig, descriptor: RelationshipDescriptor, model: Model, action: Action, options: RenderOptions) {
     let relatedSerializer = this.container.lookup<FlatSerializer>(`serializer:${ descriptor.type }`, { loose: true }) || this.container.lookup<FlatSerializer>(`serializer:application`, { loose: true });
     assert(relatedSerializer, `No serializer found for ${ descriptor.type }, and no fallback application serializer found either`);
     if (descriptor.mode === 'hasMany') {
       let relatedModels = <Model[]>await model.getRelated(relationship);
       return await all(relatedModels.map(async (relatedModel: Model) => {
         if (config.strategy === 'embed') {
-          return await relatedSerializer.renderModel(relatedModel, options);
+          return await relatedSerializer.renderModel(relatedModel, action, options);
         } else if (config.strategy === 'id') {
           return relatedModel.id;
         }
@@ -129,7 +128,7 @@ export default abstract class FlatSerializer extends Serializer {
     } else {
       let relatedModel = <Model>await model.getRelated(relationship);
       if (config.strategy === 'embed') {
-        return await relatedSerializer.renderModel(relatedModel, options);
+        return await relatedSerializer.renderModel(relatedModel, action, options);
       } else if (config.strategy === 'id') {
         return relatedModel.id;
       }
