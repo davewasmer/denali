@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as Bluebird from 'bluebird';
 import { spinner, Command, unwrap } from 'denali-cli';
 import { exec, ExecOptions } from 'child_process';
+import { sync as readPkg } from 'read-pkg';
 
 const run = Bluebird.promisify<[ string, string ], string, ExecOptions>(exec);
 
@@ -67,7 +68,7 @@ export default class PublishCommand extends Command {
       await spinner.fail('Publish failed');
       throw error;
     }
-    let pkg = require(path.join(process.cwd(), 'package.json'));
+    let pkg = readPkg();
     await spinner.succeed(`${ pkg.name } ${ pkg.version } published!`);
   }
 

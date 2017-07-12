@@ -105,6 +105,7 @@
     "mkdirp": "^0.5.1",
     "moment": "^2.18.1",
     "morgan": "^1.8.1",
+    "read-pkg": "^2.0.0",
     "response-time": "^2.3.1",
     "route-parser": "0.0.5",
     "strip-extension": "^1.1.0",

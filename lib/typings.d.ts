@@ -13,3 +13,4 @@ declare module "strip-extension";
 declare module "wordwrap";
 declare module "command-exists";
 declare module "cli-table2";
+declare module "read-pkg";
