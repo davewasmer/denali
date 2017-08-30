@@ -1,7 +1,7 @@
 /* tslint:disable:completed-docs no-empty no-invalid-this member-access */
 import { isArray } from 'lodash';
 import test from 'ava';
-import { Model, hasMany, Container, MemoryAdapter } from 'denali';
+import { attr, Model, hasMany, Container, MemoryAdapter } from 'denali';
 
 test.beforeEach((t) => {
   t.context.container = new Container(__dirname);
@@ -37,6 +37,21 @@ test('adapter falls back to application if model specific not found', async (t) 
 
   let post = container.factoryFor<Model>('model:post').create();
   t.true(post.adapter instanceof ApplicationAdapter);
+});
+
+test('set attribute on model sets it on the record', async (t) => {
+  t.plan(2);
+  let container: Container = t.context.container;
+  container.register('model:post', class Post extends Model {
+    static test = attr('text');
+  });
+  class ApplicationAdapter extends MemoryAdapter {}
+  container.register('orm-adapter:application', ApplicationAdapter);
+
+  let post = container.factoryFor<Model>('model:post').create();
+  t.is(post.record.test, undefined);
+  post.test = 'test';
+  t.is(post.record.test, 'test');
 });
 
 test('get<RelationshipName> invokes adapter', async (t) => {
