@@ -1,8 +1,11 @@
 import * as assert from 'assert';
+import * as path from 'path';
+import * as notifier from 'node-notifier';
 import Action from '../../lib/runtime/action';
 import Logger from '../../lib/runtime/logger';
 import FlatParser from '../../lib/parse/flat';
 import inject from '../../lib/metal/inject';
+import Application from '../../lib/runtime/application';
 
 /**
  * The default error action. When Denali encounters an error while processing a request, it will
@@ -22,6 +25,7 @@ export default class ErrorAction extends Action {
 
   logger = inject<Logger>('app:logger');
   parser = inject<FlatParser>('parser:flat');
+  application = inject<Application>('app:main');
 
   /**
    * Respond with JSON by default
@@ -48,6 +52,14 @@ export default class ErrorAction extends Action {
         error.message = 'Internal Error';
       }
       delete error.stack;
+    }
+    if (!this.config.logging.hideOSNotifications) {
+      notifier.notify({
+        title: `Request failed: ${ this.application.pkg.name } Error`,
+        message: error.message,
+        icon: path.join(__dirname, '../views/error-notification-icon.png'),
+        sound: true
+      });
     }
     if (this.request.accepts([ 'html' ]) && this.container.lookup('config:environment').environment !== 'production') {
       this.render(error.status, error, { view: 'error.html' });
