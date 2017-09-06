@@ -9,7 +9,7 @@ test('registered entries take precedence over resolved entries', async (t) => {
   let resolver = new Resolver(dummyAppPath);
   t.is(Object.getPrototypeOf(resolver.retrieve('action:application')), Action);
   resolver.register('action:application', { foo: true });
-  t.true(resolver.retrieve('action:application').foo);
+  t.true(resolver.retrieve<any>('action:application').foo);
 });
 
 test('retrieve tries type-specific retrieval methods if present', async (t) => {
