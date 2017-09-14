@@ -44,9 +44,9 @@ export interface Responder {
  */
 export interface ResponderParams {
   body?: any;
-  query?: Dict<string>;
-  headers?: Dict<string | string[]>;
-  params?: Dict<string>;
+  query?: any;
+  headers?: any;
+  params?: any;
   [key: string]: any;
 }
 
