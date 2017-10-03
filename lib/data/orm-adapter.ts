@@ -1,6 +1,7 @@
 import DenaliObject from '../metal/object';
 import Model from './model';
 import { RelationshipDescriptor } from './descriptors';
+import { camelCase } from 'lodash';
 
 /**
  * The ORMAdapter class is responsible for enabling Denali to communicate with the ORM of your
@@ -133,6 +134,17 @@ abstract class ORMAdapter extends DenaliObject {
    * Delete the supplied model from the persistent data store.
    */
   abstract async deleteRecord(model: Model, options: any): Promise<void>;
+
+  /**
+   * foreignKeyForRelationship can be used to define a custom key when retrieving a relationship from the database.
+   * By default OrmAdapter uses camelCase.
+   * e.x. postId
+   * @param model to be used to get the model type name from.
+   */
+  foreignKeyForRelationship(model: Model): string {
+    let type = model.getType(this.container);
+    return `${camelCase(type)}Id`;
+  }
 
   /**
    * Takes an array of Denali Models and defines an ORM specific model class, and/or any other ORM
