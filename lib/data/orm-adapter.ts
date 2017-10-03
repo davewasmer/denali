@@ -135,6 +135,14 @@ abstract class ORMAdapter extends DenaliObject {
   abstract async deleteRecord(model: Model, options: any): Promise<void>;
 
   /**
+   * foreignKeyForRelationship can be used to define a custom key when retrieving a relationship from the database.
+   * By default OrmAdapter uses camelCase.
+   * e.x. postId
+   * @param model to be used to get the model type name from.
+   */
+  foreignKeyForRelationship?(model: Model): string;
+
+  /**
    * Takes an array of Denali Models and defines an ORM specific model class, and/or any other ORM
    * specific setup that might be required for that Model.
    */
