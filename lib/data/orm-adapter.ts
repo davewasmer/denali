@@ -141,10 +141,7 @@ abstract class ORMAdapter extends DenaliObject {
    * e.x. postId
    * @param model to be used to get the model type name from.
    */
-  foreignKeyForRelationship(model: Model): string {
-    let type = model.getType(this.container);
-    return `${camelCase(type)}Id`;
-  }
+  foreignKeyForRelationship?(model: Model): string;
 
   /**
    * Takes an array of Denali Models and defines an ORM specific model class, and/or any other ORM
