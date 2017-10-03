@@ -1,7 +1,6 @@
 import DenaliObject from '../metal/object';
 import Model from './model';
 import { RelationshipDescriptor } from './descriptors';
-import { camelCase } from 'lodash';
 
 /**
  * The ORMAdapter class is responsible for enabling Denali to communicate with the ORM of your
