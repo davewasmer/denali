@@ -48,7 +48,7 @@ let template = compileTemplate(`
           <h2 class='source'>from <%= data.error.action %></h2>
         <% } %>
         <h5>Stacktrace:</h5>
-        <pre><code><%= data.error.stack.replace('\\n', '\n') %></code></pre>
+        <pre><code><%= data.error.stack %></code></pre>
       </div>
     </body>
   </html>
@@ -60,6 +60,7 @@ export default class ErrorView extends View {
 
   async render(action: Action, response: ServerResponse, error: any, options: RenderOptions) {
     response.setHeader('Content-type', 'text/html');
+    error.stack = error.stack.replace('\\n', '\n');
     response.write(template({ error }));
     response.end();
   }
