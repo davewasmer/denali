@@ -3,7 +3,7 @@ import Route from './route';
 import { AppConfig } from './config';
 import { constant } from 'lodash';
 import * as accepts from 'accepts';
-import { isIP } from 'net';
+import { isIP, Socket } from 'net';
 import { TLSSocket } from 'tls';
 import * as typeis from 'type-is';
 import * as http from 'http';
@@ -224,6 +224,10 @@ export default class Request {
    */
   get hasBody(): boolean {
     return typeis.hasBody(this.incomingMessage);
+  }
+
+  get connection(): Socket {
+    return this.incomingMessage.connection;
   }
 
   constructor(incomingMessage: http.IncomingMessage | https.IncomingMessage, serverConfig?: AppConfig['server']) {
