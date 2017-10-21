@@ -182,11 +182,6 @@ export default abstract class Action extends DenaliObject {
   actionPath: string;
 
   /**
-   * Automatically inject the db service
-   */
-  // db = inject<DatabaseService>('service:db');
-
-  /**
    * Render the response body
    */
 
