@@ -22,7 +22,7 @@ If your app can swap databases with zero refactoring, that either means:
 
 1. The underlying databases are identical in their querying and storage
 semantics (rarely the case), or
-2. You were using some lowest common denominator of querying and storage semantics for tthe two databases that is
+2. You were using some lowest common denominator of querying and storage semantics for the two databases that is
 equivalent across both (which means you weren't using the strengths of your original
 database)
 
@@ -32,7 +32,7 @@ This means a good data layer should highlight the unique strengths of choice of
 data store, rather than trying to hide any differences behind a universal
 interface.
 
-So then why have a data layer at all for Denali? It's primarly _for addons_.
+So then why have a data layer at all for Denali? It's primarily _for addons_.
 Having some common data interface allows addons to persist and query data
 without needing to write their own adapters for every possible data store.
 
