@@ -22,9 +22,7 @@ If your app can swap databases with zero refactoring, that either means:
 
 1. The underlying databases are identical in their querying and storage
 semantics (rarely the case), or
-2. You were using some lowest common denominator of querying and storage semantics for the two databases that are
-equivalent across both (which means you weren't using the strengths of your original
-database)
+2. You were using some lowest common denominator of querying and storage semantics for the two databases that is equivalent across both (which means you weren't using the strengths of your original database)
 
 Denali is built around the assumption that different databases have different
 tradeoffs, and that you should pick the data store best suited to your use case.
