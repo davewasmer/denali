@@ -170,5 +170,5 @@ of the relationship at a time.
 
 ## Saving Data
 
-Models expose a `.save()` an instance method that returns a promise which resolves
+Models expose `.save()` an instance method that returns a promise which resolves
 or rejects when the save operation is complete.
