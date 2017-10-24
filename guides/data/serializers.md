@@ -6,7 +6,7 @@ Since Denali is API focused, it doesn't ship with any kind of view layer for
 rendering HTML. However, one way to think of Serializers is like the view layer
 for a JSON only API.
 
-When your app needs to send some data in a response, there's three problems to
+When your app needs to send some data in a response, there are three problems to
 face:
 
   1. **What data to send**: you'll often want to send only a subset of your
@@ -16,15 +16,14 @@ face:
   easier to consume or to match consumer expectations (i.e. change underscore_
   keys to camelCaseKeys).
 
-  3. **Structuring the data**: what is the structure of the response? Is there a
-     root JSON wrapper? Does it conform to a spec, i.e. JSON-API 1.0?
+  3. **Structuring the data**: what is the structure of the response? Is there a root JSON wrapper? Does it conform to a spec, i.e. JSON-API 1.0?
 
 Serializers address all of these problems. They select what data to send, apply
 transformations to that data (i.e. renaming keys, serializing values), and
 structure the result according to a particular output format.
 
-Typically, your API will have a standard output format (i.e. JSON-API 1.0) for all response. A
-good approach is to pick (or create) a base ApplicationSerializer class that renders that
+Typically, your API will have a standard output format (i.e. JSON-API 1.0) for all response.
+A good approach is to pick (or create) a base ApplicationSerializer class that renders that
 structure, much like we used a base ApplicationAction class.
 
 With a base ApplicationSerializer class in place, you'll then create a subclass
@@ -59,8 +58,7 @@ TODO documentation for relationship serializers
 
 Denali ships with two base serializers out of the box:
 
-  * **FlatSerializer**, which renders models as simple JSON objects or arrays of
-  objects. Related records are directly embedded under their relationship name.
+  * **FlatSerializer**, which renders models as simple JSON objects or arrays of objects. Related records are directly embedded under their relationship name.
 
   * **JSONAPISerializer**, a [JSON-API 1.0] compliant serializer with support
   for meta, links, errors, and more.
