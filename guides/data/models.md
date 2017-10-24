@@ -5,7 +5,7 @@ title: Models
 Denali's Models are actually just thin wrappers over your own ORM's model
 instances. They leverage
 [Proxies](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy)
-to let your ORM's methods and properties to continue to work, while guaranteeing
+to let your ORM's methods and properties to continue to work while guaranteeing
 a basic common interface across all ORMs.
 
 ## Understanding Denali's Data Layer
@@ -22,18 +22,18 @@ If your app can swap databases with zero refactoring, that either means:
 
 1. The underlying databases are identical in their querying and storage
 semantics (rarely the case), or
-2. You were using some lowest common denominator of querying and storage semantics for tthe two databases that is
+2. You were using some lowest common denominator of querying and storage semantics for the two databases that are
 equivalent across both (which means you weren't using the strengths of your original
 database)
 
 Denali is built around the assumption that different databases have different
 tradeoffs, and that you should pick the data store best suited to your use case.
 This means a good data layer should highlight the unique strengths of choice of
-data store, rather than trying to hide any differences behind a universal
+a data store, rather than trying to hide any differences behind a universal
 interface.
 
-So then why have a data layer at all for Denali? It's primarly _for addons_.
-Having some common data interface allows addons to persist and query data
+So then why have a data layer at all for Denali? It's primarily _for addons_.
+Having some common data interface allows add-ons to persist and query data
 without needing to write their own adapters for every possible data store.
 
 So if you find yourself skipping past Denali's Model API (as we'll explore
@@ -95,7 +95,7 @@ should implement the `number` data type as a `float` or `double` rather than an
 field should only container integers, you should use `integer` (assuming your
 ORM adapter supports it).
 
-The value of the common base set of data types is that it allows addons that
+The value of the common base set of data types is that it allows add-ons that
 manage data attributes to safely assume a certain subset of data types.
 
 ### Relationships
@@ -170,5 +170,5 @@ of the relationship at a time.
 
 ## Saving Data
 
-Models expose a `.save()` instance method that returns a promise which resolves
+Models expose a `.save()` an instance method that returns a promise which resolves
 or rejects when the save operation is complete.
