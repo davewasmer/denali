@@ -33,7 +33,7 @@ a data store, rather than trying to hide any differences behind a universal
 interface.
 
 So then why have a data layer at all for Denali? It's primarily _for addons_.
-Having some common data interface allows add-ons to persist and query data
+Having some common data interface allows addons to persist and query data
 without needing to write their own adapters for every possible data store.
 
 So if you find yourself skipping past Denali's Model API (as we'll explore
@@ -95,7 +95,7 @@ should implement the `number` data type as a `float` or `double` rather than an
 field should only container integers, you should use `integer` (assuming your
 ORM adapter supports it).
 
-The value of the common base set of data types is that it allows add-ons that
+The value of the common base set of data types is that it allows addons that
 manage data attributes to safely assume a certain subset of data types.
 
 ### Relationships
