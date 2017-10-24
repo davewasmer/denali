@@ -3,18 +3,18 @@ title: ORM Adapters
 ---
 
 Denali takes a somewhat unique approach to handling the data layer. Unlike most
-frameworks, it doesn't come bundled with a "blessed" ORM, or attempt to build
+frameworks, it doesn't come bundled with a "blessed" ORM or attempt to build
 it's own. Instead, Denali's Model class works with your ORM of choice by
 communicating with it through an ORM Adapter.
 
 This lets you bring your own ORM to your apps, while still enabling Denali to
-understand your data model. This is good news for your app, since it lets you
+understand your data model. This is good news for your app since it lets you
 pick the right ORM for the job and leverage the strengths of the specific data
 store backing your app, rather than relying on a lowest-common-denominator data
 layer.
 
 Normally, you won't need to write your own ORM adapters, you can just use any
-of the community supported ones. However, you may need familiarize yourself with
+of the community supported ones. However, you may need to familiarize yourself with
 any additional, custom query APIs, data types, etc that the adapter may support.
 
 ## Available ORM Adapters
