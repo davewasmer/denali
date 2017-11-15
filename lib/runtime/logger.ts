@@ -8,8 +8,8 @@ import DenaliObject from '../metal/object';
 export type LogLevel = 'info' | 'warn' | 'error';
 
 /**
- * A simple Logger class that adds timestamps and supports multiple levels of logging, colorized
- * output, and control over verbosity.
+ * A simple Logger class that adds timestamps and supports multiple levels of
+ * logging, colorized output, and control over verbosity.
  *
  * @package runtime
  * @since 0.1.0
@@ -90,9 +90,12 @@ export default class Logger extends DenaliObject {
       msg = colorizer(msg);
       levelLabel = colorizer(levelLabel);
     }
-    /* tslint:disable:no-console */
+    /* tslint:disable:no-console no-debugger */
     console.log(`[${ timestamp }] ${ levelLabel } - ${ msg }`);
-    /* tslint:enable:no-console */
+    if (level === 'error') {
+      debugger;
+    }
+    /* tslint:enable:no-console no-debugger*/
   }
 
 }

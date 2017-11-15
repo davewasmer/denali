@@ -14,23 +14,25 @@ import { singularize } from 'inflection';
 let guid = 0;
 
 /**
- * An in-memory ORM adapter for getting started quickly, testing, and debugging. Should **not** be
- * used for production data.
+ * An in-memory ORM adapter for getting started quickly, testing, and
+ * debugging. Should **not** be used for production data.
  *
  * @package data
+ * @since 0.1.0
  */
 export default class MemoryAdapter extends ORMAdapter {
 
 
   /**
-   * An in-memory cache of records. Top level objects are collections of records by type, indexed
-   * by record id.
+   * An in-memory cache of records. Top level objects are collections of
+   * records by type, indexed by record id.
    */
   _cache: { [type: string]: { [id: number]: any } } = {};
 
   /**
-   * Get the collection of records for a given type, indexed by record id. If the collection doesn't
-   * exist yet, create it and return the empty collection.
+   * Get the collection of records for a given type, indexed by record id. If
+   * the collection doesn't exist yet, create it and return the empty
+   * collection.
    */
   _cacheFor(type: string): { [id: number]: any } {
     if (!this._cache[type]) {
@@ -67,14 +69,14 @@ export default class MemoryAdapter extends ORMAdapter {
   }
 
   setId(model: Model, value: number) {
-    let collection = this._cacheFor(model.type);
+    let collection = this._cacheFor(model.modelName);
     delete collection[model.record.id];
     model.record.id = value;
     collection[value] = model.record;
   }
 
   getAttribute(model: Model, property: string): any {
-    return model.record[property];
+    return model.record[property] === undefined ? null : model.record[property];
   }
 
   setAttribute(model: Model, property: string, value: any): true {
@@ -88,7 +90,7 @@ export default class MemoryAdapter extends ORMAdapter {
   }
 
   async getRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, query: any): Promise<any|any[]> {
-    let relatedCollection = this._cacheFor(descriptor.type);
+    let relatedCollection = this._cacheFor(descriptor.relatedModelName);
     if (descriptor.mode === 'hasMany') {
       let related = filter(relatedCollection, (relatedRecord: any) => {
         let relatedIds = model.record[`${ singularize(relationship) }_ids`];
@@ -99,7 +101,7 @@ export default class MemoryAdapter extends ORMAdapter {
       }
       return related;
     }
-    return this.queryOne(descriptor.type, { id: model.record[`${ relationship }_id`] });
+    return this.queryOne(descriptor.relatedModelName, { id: model.record[`${ relationship }_id`] });
   }
 
   async setRelated(model: Model, relationship: string, descriptor: RelationshipDescriptor, relatedModels: Model|Model[]): Promise<void> {
@@ -124,7 +126,7 @@ export default class MemoryAdapter extends ORMAdapter {
   }
 
   async saveRecord(model: Model): Promise<void> {
-    let collection = this._cacheFor(model.type);
+    let collection = this._cacheFor(model.modelName);
     if (model.record.id == null) {
       guid += 1;
       model.record.id = guid;
@@ -134,7 +136,7 @@ export default class MemoryAdapter extends ORMAdapter {
   }
 
   async deleteRecord(model: Model): Promise<void> {
-    let collection = this._cacheFor(model.type);
+    let collection = this._cacheFor(model.modelName);
     delete collection[model.record.id];
   }
 

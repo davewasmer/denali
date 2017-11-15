@@ -53,18 +53,14 @@ export default class BuildCommand extends Command {
   async run(argv: any) {
     let project = new Project({
       environment: argv.environment,
-      printSlowTrees: argv.printSlowTrees,
-      lint: !argv.skipLint,
-      audit: argv.audit
+      printSlowTrees: argv.printSlowTrees
     });
 
     if (argv.watch) {
-      project.watch({
-        outputDir: <string>argv.output
-      });
+      project.watch();
     } else {
       try {
-        await project.build(argv.output);
+        await project.build();
       } catch (error) {
         await spinner.fail('Build failed');
         ui.error(error.stack);

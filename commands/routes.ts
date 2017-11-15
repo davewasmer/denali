@@ -35,8 +35,7 @@ export default class RoutesCommand extends Command {
   async run(argv: any) {
     let project = new Project({
       environment: argv.environment,
-      printSlowTrees: argv.printSlowTrees,
-      buildDummy: true
+      printSlowTrees: argv.printSlowTrees
     });
     let application: Application = await project.createApplication();
     await application.runInitializers();

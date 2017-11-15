@@ -39,8 +39,7 @@ export default class ConsoleCommand extends Command {
     ui.info(`Loading ${ argv.environment } environment. Type '.help' for details`);
     let project = new Project({
       environment: argv.environment,
-      printSlowTrees: argv.printSlowTrees,
-      buildDummy: true
+      printSlowTrees: argv.printSlowTrees
     });
     let application = await project.createApplication();
     if (application.environment === 'production') {

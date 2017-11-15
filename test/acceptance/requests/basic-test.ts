@@ -1,6 +1,6 @@
-import { appAcceptanceTest } from 'denali';
+import { setupAcceptanceTest } from 'denali';
 
-const test = appAcceptanceTest();
+const test = setupAcceptanceTest();
 
 test('hello world request', async (t) => {
   let { app } = t.context;

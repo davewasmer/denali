@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import Action from '../../lib/runtime/action';
 import Logger from '../../lib/runtime/logger';
 import JSONParser from '../../lib/parse/json';
-import inject from '../../lib/metal/inject';
+import { lookup } from '../../lib/metal/container';
 
 /**
  * The default error action. When Denali encounters an error while processing a request, it will
@@ -20,8 +20,8 @@ export default class ErrorAction extends Action {
     return this.request._originalAction;
   }
 
-  logger = inject<Logger>('app:logger');
-  parser = inject<JSONParser>('parser:json');
+  logger = lookup<Logger>('app:logger');
+  parser = lookup<JSONParser>('parser:json');
 
   /**
    * Respond with JSON by default

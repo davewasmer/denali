@@ -1,10 +1,10 @@
 import {
   forEach
 } from 'lodash';
-import { all } from 'bluebird';
 import Application from '../../lib/runtime/application';
 import Model from '../../lib/data/model';
 import ORMAdapter from '../../lib/data/orm-adapter';
+import container, { lookup } from '../../lib/metal/container';
 
 export default {
   name: 'define-orm-models',
@@ -14,25 +14,22 @@ export default {
    * any internal model representation necessary.
    */
   async initialize(application: Application): Promise<void> {
-    let container = application.container;
-    let models: { [modelName: string]: typeof Model } = application.container.lookupAll('model');
-    let modelsGroupedByAdapter = new Map();
+    let models: { [modelName: string]: typeof Model } = container.lookupAll('model');
+    let modelsGroupedByAdapter = new Map<ORMAdapter, typeof Model[]>();
     forEach(models, (ModelClass, modelName) => {
       if (ModelClass.hasOwnProperty('abstract') && ModelClass.abstract) {
         return;
       }
-      let Adapter = container.lookup(`orm-adapter:${ modelName }`, { loose: true }) || container.lookup('orm-adapter:application');
+      let Adapter = lookup<ORMAdapter>(`orm-adapter:${ modelName }`, { loose: true }) || container.lookup<ORMAdapter>('orm-adapter:application');
       if (!modelsGroupedByAdapter.has(Adapter)) {
         modelsGroupedByAdapter.set(Adapter, []);
       }
       modelsGroupedByAdapter.get(Adapter).push(ModelClass);
     });
-    let definitions: any[] = [];
-    modelsGroupedByAdapter.forEach((modelsForThisAdapter: typeof Model[], Adapter: ORMAdapter): void => {
+    for (let [Adapter, models] of modelsGroupedByAdapter) {
       if (Adapter.defineModels) {
-        definitions.push(Adapter.defineModels(modelsForThisAdapter));
+        await Adapter.defineModels(models);
       }
-    });
-    await all(definitions);
+    }
   }
 };

@@ -44,6 +44,15 @@
   dependencies:
     arrify "^1.0.1"
 
+"@denali-js/loader@*":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@denali-js/loader/-/loader-0.0.1.tgz#485d1b25b84d730a178aad8bf3ca7526c671c9e1"
+  dependencies:
+    "@types/node" "^8.0.53"
+    "@types/resolve" "^0.0.4"
+    is-builtin-module "^2.0.0"
+    resolve "^1.5.0"
+
 "@types/accepts@^1.3.3":
   version "1.3.3"
   resolved "https://registry.yarnpkg.com/@types/accepts/-/accepts-1.3.3.tgz#6da8c6e3144566feec7ce2176828f1c47523f1ab"
@@ -192,6 +201,10 @@
 "@types/node@^8.0.31":
   version "8.0.31"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-8.0.31.tgz#d9af61093cf4bfc9f066ca34de0175012cfb0ce9"
+
+"@types/node@^8.0.53":
+  version "8.5.9"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-8.5.9.tgz#7155cfb4ae405bca4dd8df1a214c339e939109bf"
 
 "@types/parseurl@^1.3.1":
   version "1.3.1"
@@ -1689,6 +1702,10 @@ buffer-shims@^1.0.0:
 builtin-modules@^1.0.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/builtin-modules/-/builtin-modules-1.1.1.tgz#270f076c5a72c02f5b65a47df94c5fe3a278892f"
+
+builtin-modules@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/builtin-modules/-/builtin-modules-2.0.0.tgz#60b7ef5ae6546bd7deefa74b08b62a43a232648e"
 
 bytes@3.0.0:
   version "3.0.0"
@@ -3812,6 +3829,12 @@ is-builtin-module@^1.0.0:
   dependencies:
     builtin-modules "^1.0.0"
 
+is-builtin-module@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/is-builtin-module/-/is-builtin-module-2.0.0.tgz#431104b3b4ba838ec7a17d82bb3bccd2233e8cd9"
+  dependencies:
+    builtin-modules "^2.0.0"
+
 is-callable@^1.1.1, is-callable@^1.1.3:
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/is-callable/-/is-callable-1.1.3.tgz#86eb75392805ddc33af71c92a0eedf74ee7604b2"
@@ -4221,6 +4244,14 @@ json-stringify-safe@^5.0.1, json-stringify-safe@~5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/json-stringify-safe/-/json-stringify-safe-5.0.1.tgz#1296a2d58fd45f19a0f6ce01d65701e2c735b6eb"
 
+json-typescript@0.0.6:
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/json-typescript/-/json-typescript-0.0.6.tgz#0d430a924565a1cd467df22bb54bf365c63ad20e"
+
+json-typescript@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/json-typescript/-/json-typescript-1.0.0.tgz#7ef93fbc79bdd15a9d1de647333a27c539480ef9"
+
 json5@^0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/json5/-/json5-0.4.0.tgz#054352e4c4c80c86c0923877d449de176a732c8d"
@@ -4228,6 +4259,18 @@ json5@^0.4.0:
 json5@^0.5.0, json5@^0.5.1:
   version "0.5.1"
   resolved "https://registry.yarnpkg.com/json5/-/json5-0.5.1.tgz#1eade7acc012034ad84e2396767ead9fa5495821"
+
+jsonapi-typescript@^0.0.8:
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/jsonapi-typescript/-/jsonapi-typescript-0.0.8.tgz#925b6bdce55f9d1057886a745808087357400e3a"
+  dependencies:
+    json-typescript "^1.0.0"
+
+jsonapi.ts@^0.0.5:
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/jsonapi.ts/-/jsonapi.ts-0.0.5.tgz#2a35531c6fa10c2378b18c5bc064cae58d5db928"
+  dependencies:
+    json-typescript "0.0.6"
 
 jsonfile@^2.1.0:
   version "2.4.0"
@@ -5298,6 +5341,10 @@ proper-lockfile@^2.0.0:
     graceful-fs "^4.1.2"
     retry "^0.10.0"
 
+protochain@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/protochain/-/protochain-1.0.5.tgz#991c407e99de264aadf8f81504b5e7faf7bfa260"
+
 proxy-addr@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/proxy-addr/-/proxy-addr-2.0.2.tgz#6571504f47bb988ec8180253f85dd7e14952bdec"
@@ -5773,6 +5820,12 @@ resolve@^1.1.6, resolve@^1.1.7, resolve@^1.3.2:
 resolve@^1.4.0, resolve@~1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/resolve/-/resolve-1.4.0.tgz#a75be01c53da25d934a98ebd0e4c4a7312f92a86"
+  dependencies:
+    path-parse "^1.0.5"
+
+resolve@^1.5.0:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/resolve/-/resolve-1.5.0.tgz#1f09acce796c9a762579f31b2c1cc4c3cddf9f36"
   dependencies:
     path-parse "^1.0.5"
 
@@ -6458,6 +6511,10 @@ tough-cookie@~2.3.0:
   resolved "https://registry.yarnpkg.com/tough-cookie/-/tough-cookie-2.3.2.tgz#f081f76e4c85720e6c37a5faced737150d84072a"
   dependencies:
     punycode "^1.4.1"
+
+tree-crawl@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/tree-crawl/-/tree-crawl-1.0.2.tgz#5cfe1c322c5dea64887e5c57324042e8f09f4fbc"
 
 tree-sync@^1.2.2:
   version "1.2.2"

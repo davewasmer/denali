@@ -4,8 +4,9 @@ import { ServerResponse as HttpServerResponse, OutgoingHttpHeaders, STATUS_CODES
 import { ServerResponse as HttpsServerResponse } from 'https';
 
 /**
- * A mock response used to simluate the server response to mock requests during tests. You shouldn't
- * need to instantiate these directly - instead, use an AppAcceptance test.
+ * A mock response used to simluate the server response to mock requests during
+ * tests. You shouldn't need to instantiate these directly - instead, use an
+ * AppAcceptance test.
  *
  * @package test
  */

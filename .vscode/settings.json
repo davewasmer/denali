@@ -4,5 +4,9 @@
   "markdown.styles": [
     "./.vscode/markdown-preview.css"
   ],
-  "gitlens.codeLens.enabled": false
+  "gitlens.codeLens.enabled": false,
+    "workbench.colorCustomizations": {
+      "titleBar.activeBackground": "#4b4aa1",
+      "titleBar.activeForeground": "#ffffff"
+    }
 }

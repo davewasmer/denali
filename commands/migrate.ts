@@ -57,8 +57,7 @@ export default class MigrateCommand extends Command {
       await spinner.succeed('Knex installed');
     }
     let project = new Project({
-      environment: argv.environment,
-      buildDummy: true
+      environment: argv.environment
     });
     let application = await project.createApplication();
     assert(application.config.migrations && application.config.migrations.db, 'DB connection info is missing. You must supply the knex connection info in config.migrations.db.');

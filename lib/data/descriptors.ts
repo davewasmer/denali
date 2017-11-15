@@ -1,3 +1,5 @@
+import { Dict } from '../utils/types';
+
 /**
  * Base Descriptor class
  *
@@ -6,24 +8,13 @@
 export class Descriptor {
 
   /**
-   * What kind of descriptor is this? Used by subclasses to differentiate easily between types.
-   */
-  type: string;
-
-  /**
-   * Generic options object that can be used to supply Denali or ORM specific config options.
-   */
-  options: any;
-
-  /**
    * Creates an instance of Descriptor.
    */
-  constructor(type: string, options: any = {}) {
-    this.type = type;
-    this.options = options;
-  }
+  constructor(public options: Dict<any> = {}) {}
 
 }
+
+export type BaseAttributeTypes = 'number' | 'string' | 'boolean' | 'date';
 
 /**
  * The Attribute class is used to tell Denali what the available attributes are
@@ -54,8 +45,14 @@ export class AttributeDescriptor extends Descriptor {
 
   /**
    * Convenience flag for checking if this is an attribute
+   *
+   * @since 0.1.0
    */
   isAttribute = true;
+
+  constructor(public datatype: BaseAttributeTypes | string, options: any) {
+    super(options);
+  }
 
 }
 
@@ -65,16 +62,16 @@ export class AttributeDescriptor extends Descriptor {
  * @package data
  * @since 0.1.0
  */
-export function attr(type: string, options?: any): AttributeDescriptor {
-  return new AttributeDescriptor(type, options);
+export function attr(datatype: BaseAttributeTypes, options?: any): AttributeDescriptor {
+  return new AttributeDescriptor(datatype, options);
 }
 
 
 /**
- * The HasManyRelationship class is used to describe a 1 to many or many to many
- * relationship on your Model. You shouldn't use the HasManyRelationship class
- * directly; instead, import the `hasMany()` method from Denali, and use it to
- * define a relationship:
+ * The HasManyRelationship class is used to describe a 1 to many or many to
+ * many relationship on your Model. You shouldn't use the HasManyRelationship
+ * class directly; instead, import the `hasMany()` method from Denali, and use
+ * it to define a relationship:
  *
  *     import { hasMany } from 'denali';
  *     class Post extends ApplicationModel {
@@ -98,13 +95,21 @@ export class HasManyRelationshipDescriptor extends Descriptor {
 
   /**
    * Convenience flag for checking if this is a relationship
+   *
+   * @since 0.1.0
    */
   isRelationship = true;
 
   /**
    * Relationship mode, i.e. 1 -> 1 or 1 -> N
+   *
+   * @since 0.1.0
    */
-  mode: 'hasMany' | 'hasOne' = 'hasMany';
+  mode = 'hasMany';
+
+  constructor(public relatedModelName: string, options: any) {
+    super(options);
+  }
 
 }
 
@@ -114,8 +119,8 @@ export class HasManyRelationshipDescriptor extends Descriptor {
  * @package data
  * @since 0.1.0
  */
-export function hasMany(type: string, options?: any): HasManyRelationshipDescriptor {
-  return new HasManyRelationshipDescriptor(type, options);
+export function hasMany(relatedModelName: string, options?: any): HasManyRelationshipDescriptor {
+  return new HasManyRelationshipDescriptor(relatedModelName, options);
 }
 
 /**
@@ -146,13 +151,21 @@ export class HasOneRelationshipDescriptor extends Descriptor {
 
   /**
    * Convenience flag for checking if this is a relationship
+   *
+   * @since 0.1.0
    */
   isRelationship = true;
 
   /**
    * Relationship mode, i.e. 1 -> 1 or 1 -> N
+   *
+   * @since 0.1.0
    */
-  mode: 'hasMany' | 'hasOne' = 'hasOne';
+  mode = 'hasOne';
+
+  constructor(public relatedModelName: string, options: any) {
+    super(options);
+  }
 
 }
 
@@ -162,8 +175,8 @@ export class HasOneRelationshipDescriptor extends Descriptor {
  * @package data
  * @since 0.1.0
  */
-export function hasOne(type: string, options?: any): HasOneRelationshipDescriptor {
-  return new HasOneRelationshipDescriptor(type, options);
+export function hasOne(relatedModelName: string, options?: any): HasOneRelationshipDescriptor {
+  return new HasOneRelationshipDescriptor(relatedModelName, options);
 }
 
 export type RelationshipDescriptor = HasManyRelationshipDescriptor | HasOneRelationshipDescriptor;

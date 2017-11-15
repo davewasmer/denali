@@ -18,8 +18,9 @@ export interface MockMessageOptions {
 }
 
 /**
- * A mock request used to simluate an HTTP request to the application during tests. You shouldn't
- * need to instantiate these directly - instead, use an AppAcceptance test.
+ * A mock request used to simluate an HTTP request to the application during
+ * tests. You shouldn't need to instantiate these directly - instead, use an
+ * AppAcceptance test.
  *
  * @package test
  */

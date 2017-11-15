@@ -90,7 +90,7 @@ export default class TestCommand extends Command {
     if (files.length === 0) {
       files.push('test/**/*.js');
     } else {
-      // Swap common file extensions out with `.js` so ava will find the actual, built files This
+      // Swap common file extensions out with `.js` so ava will find the actual, built files. This
       // doesn't cover every possible edge case, hence the `isValidJsPattern` below, but it should
       // cover the common use cases.
       files = files.map((pattern) => pattern.replace(/\.[A-z0-9]{1,4}$/, '.js'));
@@ -110,21 +110,19 @@ export default class TestCommand extends Command {
 
     let project = new Project({
       environment: 'test',
-      printSlowTrees: argv.printSlowTrees,
-      audit: !argv.skipAudit,
-      lint: !argv.skipLint,
-      buildDummy: true
+      printSlowTrees: argv.printSlowTrees
     });
 
-    let outputDir = path.join('tmp', `${ project.rootBuilder.pkg.name }-test`);
+    let outputDir = path.join('tmp', '-dummy');
 
     process.on('exit', this.cleanExit.bind(this));
     process.on('SIGINT', this.cleanExit.bind(this));
     process.on('SIGTERM', this.cleanExit.bind(this));
 
     if (argv.watch) {
-      project.watch({
-        outputDir,
+      let watch: typeof project.watch = project.isAddon ? project.watchDummy.bind(project) : project.watch.bind(project);
+      watch({
+        destDir: outputDir,
         // Don't let broccoli rebuild while tests are still running, or else
         // we'll be removing the test files while in progress leading to cryptic
         // errors.
@@ -141,11 +139,11 @@ export default class TestCommand extends Command {
             });
           }
         },
-        onBuild: this.runTests.bind(this, files, project, outputDir, argv)
+        afterBuild: this.runTests.bind(this, files, project, outputDir, argv)
       });
     } else {
       try {
-        await project.build(outputDir);
+        project.isAddon ? await project.buildDummy(outputDir) : await project.build(outputDir);
         this.runTests(files, project, outputDir, argv);
       } catch (error) {
         process.exitCode = 1;
@@ -166,7 +164,7 @@ export default class TestCommand extends Command {
     let args = files.concat([ '--concurrency', argv.concurrency ]);
     if (argv.debug) {
       avaPath = process.execPath;
-      args = [ '--inspect', '--inspect-brk', path.join(process.cwd(), 'node_modules', 'ava', 'profile.js'), ...files ];
+      args = [ '--inspect-brk', path.join(process.cwd(), 'node_modules', 'ava', 'profile.js'), ...files ];
     }
     if (argv.match) {
       args.push('--match', argv.match);

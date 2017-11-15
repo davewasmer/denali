@@ -3,7 +3,6 @@ import {
   merge
 } from 'lodash';
 import * as fs from 'fs-extra';
-import * as path from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { ui, Command, Project, unwrap } from 'denali-cli';
 import * as createDebug from 'debug';
@@ -104,10 +103,7 @@ export default class ServerCommand extends Command {
 
     let project = new Project({
       environment: argv.environment,
-      printSlowTrees: argv.printSlowTrees,
-      audit: !argv.skipAudit,
-      lint: !argv.skipLint,
-      buildDummy: true
+      printSlowTrees: argv.printSlowTrees
     });
 
     process.on('exit', this.cleanExit.bind(this));
@@ -117,8 +113,7 @@ export default class ServerCommand extends Command {
     if (argv.watch) {
       debug('starting watcher');
       project.watch({
-        outputDir: argv.output,
-        onBuild: () => {
+        afterBuild: () => {
           if (this.server) {
             debug('killing existing server');
             this.server.removeAllListeners('exit');
@@ -129,7 +124,7 @@ export default class ServerCommand extends Command {
       });
     } else {
       debug('building project');
-      await project.build(argv.output);
+      await project.build();
       this.startServer(argv);
     }
   }
@@ -141,18 +136,15 @@ export default class ServerCommand extends Command {
   }
 
   protected startServer(argv: any) {
-    let dir = argv.output;
-    let args = [ 'app/index.js' ];
+    let args = [ 'index.js' ];
     if (argv.debug) {
       args.unshift('--inspect', '--debug-brk');
     }
-    if (!fs.existsSync(path.join(dir, 'app', 'index.js'))) {
-      ui.error('Unable to start your application: missing app/index.js file');
-      return;
+    if (!fs.existsSync('index.js')) {
+      throw new Error(`Unable to start your application: missing /index.js file`);
     }
     debug(`starting server process: ${ process.execPath } ${ args.join(' ') }`);
     this.server = spawn(process.execPath, args, {
-      cwd: dir,
       stdio: [ 'pipe', process.stdout, process.stderr ],
       env: merge(clone(process.env), {
         PORT: argv.port,

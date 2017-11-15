@@ -11,8 +11,7 @@ function mockRequest(options?: any) {
 }
 
 test.beforeEach(async (t) => {
-  let parser = t.context.parser = new JSONParser(<any>{});
-  parser.init();
+  t.context.parser = new JSONParser();
 });
 
 test('returns standard responder params with body untouched', async (t) => {

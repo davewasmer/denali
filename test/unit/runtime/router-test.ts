@@ -1,17 +1,17 @@
 /* tslint:disable:completed-docs no-empty no-invalid-this member-access */
-import test from 'ava';
-import * as path from 'path';
-import { constant } from 'lodash';
 import {
+  setupUnitTest,
   Router,
   MockRequest,
   MockResponse,
-  Container,
-  Action,
-  JSONParser,
-  Logger } from 'denali';
+  Action } from 'denali';
 
-const dummyAppPath = path.join(__dirname, '..', 'dummy');
+const test = setupUnitTest(() => new Router(), {
+  'app:logger': true,
+  'service:config': true,
+  'config:environment': true,
+  'parser:application': true
+});
 
 test.todo('map creates routes');
 test.todo('handle finds matching route & hands off to action');
@@ -24,44 +24,30 @@ test.todo('resource(name, { only: [...] }) creates only listed CRUD routes');
 test.todo('namespace(name, ...) returns a wrapper to create routes under the namespace');
 
 test('runs middleware before determining routing', async (t) => {
-  t.plan(2);
-  let count = 0;
-  let container = new Container(dummyAppPath);
-  container.register('service:config', { get: constant({}) }, { instantiate: false, singleton: false });
-  container.register('app:router', Router);
-  container.register('app:logger', Logger);
-  container.register('parser:application', JSONParser);
-  container.register('config:environment', { environment: 'development' });
-  container.register('service:db', {}, { instantiate: false });
-  container.register('action:error', class TestAction extends Action {
+  let { inject, subject } = t.context;
+  t.plan(1);
+  let sequence: string[] = [];
+  inject('action:error', class TestAction extends Action {
     respond() {
-      count += 1;
-      t.is(count, 2);
+      sequence.push('error action');
     }
   });
-  let router = container.lookup<Router>('app:router');
-  router.use((req, res, next) => {
-    count += 1;
-    t.is(count, 1);
+  let router = subject();
+  router.use((req: any, res: any , next: any) => {
+    sequence.push('middleware');
     next();
   });
+
   await router.handle(<any>(new MockRequest()), (<any>new MockResponse()));
+  t.deepEqual(sequence, [ 'middleware', 'error action' ]);
 });
 
 test('#urlFor works with string argument', (t) => {
-  let container = new Container(dummyAppPath);
-
-  container.register('app:router', Router);
-  container.register('service:config', {}, { instantiate: false, singleton: false });
-  container.register('action:index', class TestAction extends Action {
-    serializer = false;
-    respond() {
-      // noop
-    }
+  let { inject, subject } = t.context;
+  inject('action:index', class TestAction extends Action {
+    respond() {}
   });
-
-  let router = container.lookup('app:router');
+  let router = subject();
   router.get('/test/:id/', 'index');
-
   t.is(router.urlFor('index', {id: 10}), '/test/10/', 'Router should return the correctly reversed url');
 });

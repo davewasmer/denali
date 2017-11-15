@@ -1,6 +1,8 @@
 /* tslint:disable:completed-docs no-empty no-invalid-this member-access */
-import test from 'ava';
 import { mixin, createMixin } from 'denali';
+import { setupUnitTest } from 'denali';
+
+const test = setupUnitTest();
 
 test('mixins apply in order', async (t) => {
   class Base {}

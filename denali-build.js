@@ -1,9 +1,9 @@
 const path = require('path');
 const chalk = require('chalk');
 const { exec } = require('child_process');
-const { Builder, ui } = require('denali-cli');
+const { AddonBuilder, ui } = require('denali-cli');
 
-module.exports = class DenaliBuilder extends Builder {
+module.exports = class DenaliBuilder extends AddonBuilder {
 
   processSelf(tree, dir) {
     tree = this.transpileTree(tree, dir);
@@ -19,7 +19,8 @@ module.exports = class DenaliBuilder extends Builder {
     let tsconfig = require(path.join(dir, 'tsconfig.json'));
     tsconfig.baseUrl = __dirname;
     let transpiledTS = new Typescript(tree, {
-      tsconfig, 
+      tsconfig,
+      throwOnError: false,
       workingPath: __dirname,
       annotation: 'compile typescript'
     });

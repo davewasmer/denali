@@ -1,26 +1,15 @@
-import {
-  values,
-  constant,
-  noop
-} from 'lodash';
-import * as assert from 'assert';
-import * as fs from 'fs';
-import * as path from 'path';
+import { values, constant, noop, defaults } from 'lodash';
 import * as http from 'http';
 import * as https from 'https';
-import { each, all } from 'bluebird';
+import { all } from 'bluebird';
 import Addon from './addon';
 import topsort from '../utils/topsort';
 import Router from './router';
 import Logger from './logger';
 import { AppConfig } from './config';
-import Container from '../metal/container';
-import findPlugins from 'find-plugins';
-import * as tryRequire from 'try-require';
-import * as createDebug from 'debug';
+import container, { Container } from '../metal/container';
 import { Vertex } from '../utils/topsort';
-
-const debug = createDebug('denali:application');
+import Loader from '@denali-js/loader';
 
 export interface AppConfigBuilder {
   (environment: string, container: Container): AppConfig;
@@ -39,22 +28,10 @@ export interface RoutesMap {
 }
 
 /**
- * Options for instantiating an application
- */
-export interface ApplicationOptions {
-  router?: Router;
-  addons?: string[];
-  container?: Container;
-  environment: string;
-  dir: string;
-  pkg?: any;
-}
-
-/**
- * Initializers are run before the application starts up. You are given the application instance,
- * and if you need to perform async operations, you can return a Promise. You can configure
- * initializer order by specifying the names of initializers that should come before or after your
- * initializer.
+ * Initializers are run before the application starts up. You are given the
+ * application instance, and if you need to perform async operations, you can
+ * return a Promise. You can configure initializer order by specifying the
+ * names of initializers that should come before or after your initializer.
  *
  * @since 0.1.0
  */
@@ -66,8 +43,8 @@ export interface Initializer {
 }
 
 /**
- * Application instances are specialized Addons, designed to kick off the loading, mounting, and
- * launching stages of booting up.
+ * Application instances are specialized Addons, designed to kick off the
+ * loading, mounting, and launching stages of booting up.
  *
  * @package runtime
  */
@@ -86,13 +63,6 @@ export default class Application extends Addon {
   config: any;
 
   /**
-   * The container instance for the entire application
-   *
-   * @since 0.1.0
-   */
-  container: Container;
-
-  /**
    * Track servers that need to drain before application shutdown
    */
   protected drainers: (() => Promise<void>)[];
@@ -105,27 +75,28 @@ export default class Application extends Addon {
   logger: Logger;
 
   /**
-   * List of child addons for this app (one-level deep only, i.e. no addons-of-addons are included)
+   * List of child addons for this app (one-level deep only, i.e. no
+   * addons-of-addons are included)
    *
    * @since 0.1.0
    */
-  addons: Addon[];
+  addons: Addon[] = [];
 
-  constructor(options: ApplicationOptions) {
-    assert(fs.existsSync(options.dir), '`options.dir` must contain a valid path to the directory containing this application');
-    let container = new Container(options.dir);
-    super(Object.assign(options, { container }));
+  constructor(loader: Loader, options: { environment?: string }) {
+    super(loader, defaults(options, { environment: 'development' }));
+
+    this.loader.children.forEach((addonLoader, addonName) => {
+      let Addon = addonLoader.resolver.retrieve('app:addon');
+      this.addons.push(new Addon(addonLoader, options));
+    });
 
     this.drainers = [];
 
     // Setup some helpful container shortcuts
-    this.container.register('app:main', this, { singleton: true, instantiate: false });
+    container.register('app:main', this);
 
-    // Find addons for this application
-    this.addons = this.buildAddons(options.addons || []);
-
-    this.router = this.container.lookup('app:router');
-    this.logger = this.container.lookup('app:logger');
+    this.router = container.lookup('app:router');
+    this.logger = container.lookup('app:logger');
 
     // Generate config first, since the loading process may need it
     this.config = this.generateConfig();
@@ -134,54 +105,20 @@ export default class Application extends Addon {
   }
 
   /**
-   * Given a directory that contains an addon, load that addon and instantiate it's Addon class.
-   */
-  protected buildAddons(preseededAddons: string[]): Addon[] {
-    return findPlugins({
-      dir: this.dir,
-      keyword: 'denali-addon',
-      include: preseededAddons
-    }).map((plugin) => {
-      let AddonClass;
-      let distDir = plugin.dir;
-      if (plugin.pkg.mainDir) {
-        distDir = path.join(plugin.dir, plugin.pkg.mainDir);
-      }
-      try {
-        AddonClass = tryRequire(path.join(distDir, 'app', 'addon.js'));
-        AddonClass = AddonClass || Addon;
-      } catch (e) {
-        /* tslint:disable:no-console */
-        console.error(`Error loading an addon from ${ plugin.dir }:`);
-        console.error(e);
-        /* tslint:enable:no-console */
-        throw e;
-      }
-      AddonClass = <typeof Addon>(AddonClass.default || AddonClass);
-      let addon = new AddonClass({
-        environment: this.environment,
-        container: this.container,
-        dir: distDir,
-        pkg: plugin.pkg
-      });
-      debug(`Addon: ${ addon.pkg.name }@${ addon.pkg.version } (${ addon.dir }) `);
-      return addon;
-    });
-  }
-
-  /**
-   * Take the loaded environment config functions, and execute them. Application config is executed
-   * first, and the returned config object is handed off to the addon config files, which add their
-   * configuration by mutating that same object.
+   * Take the loaded environment config functions, and execute them.
+   * Application config is executed first, and the returned config object is
+   * handed off to the addon config files, which add their configuration by
+   * mutating that same object.
    *
-   * The resulting final config is stored at `application.config`, and is registered in the
-   * container under `config:environment`.
+   * The resulting final config is stored at `application.config`, and is
+   * registered in the container under `config:environment`.
    *
    * This is invoked before the rest of the addons are loaded for 2 reasons:
    *
-   * - The config values for the application could theoretically impact the addon loading process
-   * - Addons are given a chance to modify the application config, so it must be loaded before they
-   *   are.
+   * - The config values for the application could theoretically impact the
+   *   addon loading process
+   * - Addons are given a chance to modify the application config, so it must
+   *   be loaded before they are.
    */
   protected generateConfig(): any {
     let appConfig = this.resolver.retrieve<AppConfigBuilder>('config:environment') || <AppConfigBuilder>constant({
@@ -190,13 +127,13 @@ export default class Application extends Addon {
         port: 3000
       }
     });
-    let config = appConfig(this.environment, this.container);
+    let config = appConfig(this.environment, container);
     config.environment = this.environment;
-    this.container.register('config:environment', config);
+    container.register('config:environment', config);
     this.addons.forEach((addon) => {
       let addonConfig = addon.resolver.retrieve<AddonConfigBuilder>('config:environment');
       if (addonConfig) {
-        addonConfig(this.environment, this.container, config);
+        addonConfig(this.environment, container, config);
       }
     });
     return config;
@@ -225,28 +162,23 @@ export default class Application extends Addon {
   }
 
   /**
-   * Start the Denali server. Runs all initializers, creates an HTTP server, and binds to the port
-   * to handle incoming HTTP requests.
+   * Start the Denali server. Runs all initializers, creates an HTTP server,
+   * and binds to the port to handle incoming HTTP requests.
    *
    * @since 0.1.0
    */
   async start(): Promise<void> {
     let port = this.config.server.port || 3000;
-    try {
-      await this.runInitializers();
-      if (!this.config.server.detached) {
-        await this.createServer(port);
-        this.logger.info(`${ this.pkg.name }@${ this.pkg.version } server up on port ${ port }`);
-      }
-    } catch (error) {
-      this.logger.error('Problem starting app ...');
-      this.logger.error(error.stack || error);
+    await this.runInitializers();
+    if (!this.config.server.detached) {
+      await this.createServer(port);
+      this.logger.info(`${ this.name } server up on port ${ port }`);
     }
   }
 
   /**
-   * Creates an HTTP or HTTPS server, depending on whether or not SSL configuration is present in
-   * config/environment.js
+   * Creates an HTTP or HTTPS server, depending on whether or not SSL
+   * configuration is present in config/environment.js
    */
   protected async createServer(port: number): Promise<void> {
     await new Promise((resolve) => {
@@ -267,22 +199,24 @@ export default class Application extends Addon {
   }
 
   /**
-   * Lookup all initializers and run them in sequence. Initializers can override the default load
-   * order by including `before` or `after` properties on the exported class (the name or array of
-   * names of the other initializers it should run before/after).
+   * Lookup all initializers and run them in sequence. Initializers can
+   * override the default load order by including `before` or `after`
+   * properties on the exported class (the name or array of names of the other
+   * initializers it should run before/after).
    *
    * @since 0.1.0
    */
   async runInitializers(): Promise<void> {
-    let initializers = <Initializer[]>topsort(<Vertex[]>values(this.container.lookupAll('initializer')));
-    await each(initializers, async (initializer: Initializer) => {
+    let initializers = values(container.lookupAll<Initializer>('initializer'));
+    initializers = topsort(<Vertex[]>initializers);
+    for (let initializer of initializers) {
       await initializer.initialize(this);
-    });
+    }
   }
 
   /**
-   * Shutdown the application gracefully (i.e. close external database connections, drain in-flight
-   * requests, etc)
+   * Shutdown the application gracefully (i.e. close external database
+   * connections, drain in-flight requests, etc)
    *
    * @since 0.1.0
    */
@@ -291,7 +225,7 @@ export default class Application extends Addon {
     await all(this.addons.map(async (addon) => {
       await addon.shutdown(this);
     }));
-    this.container.teardown();
+    container.teardown();
   }
 
 }

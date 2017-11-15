@@ -9,22 +9,29 @@ import Serializer, { RelationshipConfig } from './serializer';
 import Model from '../data/model';
 import Action, { RenderOptions } from '../runtime/action';
 import { RelationshipDescriptor } from '../data/descriptors';
+import { lookup } from '../metal/container';
 
 /**
  * Renders the payload as a flat JSON object or array at the top level. Related
  * models are embedded.
  *
  * @package data
+ * @since 0.1.0
  */
 export default abstract class JSONSerializer extends Serializer {
 
   /**
-   * The default content type to apply to responses formatted by this serializer
+   * The default content type to apply to responses formatted by this
+   * serializer
+   *
+   * @since 0.1.0
    */
   contentType = 'application/json';
 
   /**
    * Renders the payload, either a primary data model(s) or an error payload.
+   *
+   * @since 0.1.0
    */
   async serialize(body: any, action: Action, options: RenderOptions = {}): Promise<any> {
     if (body instanceof Error) {
@@ -35,6 +42,8 @@ export default abstract class JSONSerializer extends Serializer {
 
   /**
    * Renders a primary data payload (a model or array of models).
+   *
+   * @since 0.1.0
    */
   protected async renderPrimary(payload: any, action: Action, options: RenderOptions): Promise<any> {
     if (isArray(payload)) {
@@ -47,6 +56,8 @@ export default abstract class JSONSerializer extends Serializer {
 
   /**
    * If the primary data isn't a model, just render whatever it is directly
+   *
+   * @since 0.1.0
    */
   async renderItem(item: any, action: Action, options: RenderOptions) {
     if (item instanceof Model) {
@@ -57,6 +68,8 @@ export default abstract class JSONSerializer extends Serializer {
 
   /**
    * Renders an individual model
+   *
+   * @since 0.1.0
    */
   async renderModel(model: Model, action: Action, options: RenderOptions): Promise<any> {
     let id = model.id;
@@ -67,10 +80,12 @@ export default abstract class JSONSerializer extends Serializer {
 
   /**
    * Serialize the attributes for a given model
+   *
+   * @since 0.1.0
    */
   protected serializeAttributes(model: Model, action: Action, options: RenderOptions): any {
     let serializedAttributes: any = {};
-    let attributes = this.attributesToSerialize(action, options); 
+    let attributes = this.attributesToSerialize(action, options);
     attributes.forEach((attributeName) => {
       let key = this.serializeAttributeName(attributeName);
       let rawValue = model[attributeName];
@@ -85,6 +100,8 @@ export default abstract class JSONSerializer extends Serializer {
   /**
    * Transform attribute names into their over-the-wire representation. Default
    * behavior uses the attribute name as-is.
+   *
+   * @since 0.1.0
    */
   protected serializeAttributeName(attributeName: string): string {
     return attributeName;
@@ -95,6 +112,8 @@ export default abstract class JSONSerializer extends Serializer {
    * changing how certain types of values are serialized, i.e. Date objects.
    *
    * The default implementation returns the attribute's value unchanged.
+   *
+   * @since 0.1.0
    */
   protected serializeAttributeValue(value: any, key: string, model: any): any {
     return value;
@@ -102,10 +121,12 @@ export default abstract class JSONSerializer extends Serializer {
 
   /**
    * Serialize the relationships for a given model
+   *
+   * @since 0.1.0
    */
   protected async serializeRelationships(model: any, action: Action, options: RenderOptions): Promise<{ [key: string]: any }> {
     let serializedRelationships: { [key: string ]: any } = {};
-    let relationships = this.relationshipsToSerialize(action, options); 
+    let relationships = this.relationshipsToSerialize(action, options);
 
     // The result of this.relationships is a whitelist of which relationships
     // should be serialized, and the configuration for their serialization
@@ -122,15 +143,19 @@ export default abstract class JSONSerializer extends Serializer {
 
   /**
    * Serializes a relationship
+   *
+   * @since 0.1.0
    */
   protected async serializeRelationship(relationship: string, config: RelationshipConfig, descriptor: RelationshipDescriptor, model: Model, action: Action, options: RenderOptions) {
-    let relatedSerializer = this.container.lookup<JSONSerializer>(`serializer:${ descriptor.type }`, { loose: true }) || this.container.lookup<JSONSerializer>(`serializer:application`, { loose: true });
-    assert(relatedSerializer, `No serializer found for ${ descriptor.type }, and no fallback application serializer found either`);
+    let relatedSerializer = lookup<JSONSerializer>(`serializer:${ descriptor.relatedModelName }`, { loose: true }) || lookup<JSONSerializer>(`serializer:application`, { loose: true });
+    if (typeof relatedSerializer === 'boolean') {
+      throw new Error(`No serializer found for ${ descriptor.relatedModelName }, and no fallback application serializer found either`);
+    }
     if (descriptor.mode === 'hasMany') {
       let relatedModels = <Model[]>await model.getRelated(relationship);
       return await all(relatedModels.map(async (relatedModel: Model) => {
         if (config.strategy === 'embed') {
-          return await relatedSerializer.renderModel(relatedModel, action, options);
+          return await (<JSONSerializer>relatedSerializer).renderModel(relatedModel, action, options);
         } else if (config.strategy === 'id') {
           return relatedModel.id;
         }
@@ -146,12 +171,10 @@ export default abstract class JSONSerializer extends Serializer {
   }
 
   /**
-   * Transform relationship names into their over-the-wire representation. Default
-   * behavior uses the relationship name as-is.
+   * Transform relationship names into their over-the-wire representation.
+   * Default behavior uses the relationship name as-is.
    *
-   * @protected
-   * @param {string} name
-   * @returns {string}
+   * @since 0.1.0
    */
   protected serializeRelationshipName(name: string): string {
     return name;
@@ -159,6 +182,8 @@ export default abstract class JSONSerializer extends Serializer {
 
   /**
    * Render an error payload
+   *
+   * @since 0.1.0
    */
   protected renderError(error: any, action: Action, options: any): any {
     return {

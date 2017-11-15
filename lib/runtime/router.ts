@@ -6,14 +6,15 @@ import * as createDebug from 'debug';
 import Errors from './errors';
 import Route from './route';
 import Request from './request';
-import ensureArray = require('arrify');
 import DenaliObject from '../metal/object';
-import Container from '../metal/container';
+import { lookup } from '../metal/container';
 import ConfigService from './config';
+import { Constructor } from '../utils/types';
 import Action from './action';
 import {
   find,
-  forEach
+  forEach,
+  castArray
  } from 'lodash';
 
 const debug = createDebug('denali:router');
@@ -35,8 +36,8 @@ export interface MiddlewareFn {
 
 export interface ResourceOptions {
   /**
-   * Should routes for related resources be generated? If true, routes will be generated following
-   * the JSON-API recommendations for relationship URLs.
+   * Should routes for related resources be generated? If true, routes will be
+   * generated following the JSON-API recommendations for relationship URLs.
    *
    * @see {@link http://jsonapi.org/recommendations/#urls-relationships|JSON-API URL
    * Recommendatiosn}
@@ -64,9 +65,10 @@ export interface RouterDSL {
 }
 
 /**
- * The Router handles incoming requests, sending them to the appropriate action. It's also
- * responsible for defining routes in the first place - it's passed into the `config/routes.js`
- * file's exported function as the first argument.
+ * The Router handles incoming requests, sending them to the appropriate
+ * action. It's also responsible for defining routes in the first place - it's
+ * passed into the `config/routes.js` file's exported function as the first
+ * argument.
  *
  * @package runtime
  * @since 0.1.0
@@ -87,23 +89,18 @@ export default class Router extends DenaliObject implements RouterDSL {
   };
 
   /**
-   * The internal generic middleware handler, responsible for building and executing the middleware
-   * chain.
+   * The internal generic middleware handler, responsible for building and
+   * executing the middleware chain.
    */
   protected middleware: any = (<() => any>ware)();
 
-  /**
-   * The application container
-   */
-  container: Container;
-
-  get config(): ConfigService {
-    return this.container.lookup('service:config');
+  get config() {
+    return lookup<ConfigService>('service:config');
   }
 
   /**
-   * Helper method to invoke the function exported by `config/routes.js` in the context of the
-   * current router instance.
+   * Helper method to invoke the function exported by `config/routes.js` in the
+   * context of the current router instance.
    *
    * @since 0.1.0
    */
@@ -113,9 +110,9 @@ export default class Router extends DenaliObject implements RouterDSL {
   }
 
   /**
-   * Takes an incoming request and it's response from an HTTP server, prepares them, runs the
-   * generic middleware first, hands them off to the appropriate action given the incoming URL, and
-   * finally renders the response.
+   * Takes an incoming request and it's response from an HTTP server, prepares
+   * them, runs the generic middleware first, hands them off to the appropriate
+   * action given the incoming URL, and finally renders the response.
    */
   async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     let serverConfig = this.config.get('server');
@@ -150,7 +147,7 @@ export default class Router extends DenaliObject implements RouterDSL {
       }
 
       // Create our action to handle the response
-      let action: Action = request.route.action.create();
+      let action: Action = new request.route.action();
 
       // Run the action
       debug(`[${ request.id }]: running action`);
@@ -162,19 +159,20 @@ export default class Router extends DenaliObject implements RouterDSL {
   }
 
   /**
-   * Takes a request, response, and an error and hands off to the generic application level error
-   * action.
+   * Takes a request, response, and an error and hands off to the generic
+   * application level error action.
    */
   protected async handleError(request: Request, res: ServerResponse, error: Error) {
     request.params = request.params || {};
     request.params.error = error;
-    let errorAction = this.container.lookup('action:error');
+    let ErrorAction = lookup<Constructor<Action>>('action:error');
+    let errorAction = new ErrorAction();
     return errorAction.run(request, res);
   }
 
   /**
-   * Add the supplied middleware function to the generic middleware stack that runs prior to action
-   * handling.
+   * Add the supplied middleware function to the generic middleware stack that
+   * runs prior to action handling.
    *
    * @since 0.1.0
    */
@@ -183,14 +181,13 @@ export default class Router extends DenaliObject implements RouterDSL {
   }
 
   /**
-   * Add a route to the application. Maps a method and URL pattern to an action, with optional
-   * additional parameters.
+   * Add a route to the application. Maps a method and URL pattern to an
+   * action, with optional additional parameters.
    *
    * URL patterns can use:
    *
-   * * Dynamic segments, i.e. `'foo/:bar'` * Wildcard segments, i.e. `'foo/*bar'`, captures the rest
-   * of the URL up
-   *    to the querystring
+   * * Dynamic segments, i.e. `'foo/:bar'` * Wildcard segments, i.e.
+   *   `'foo/*bar'`, captures the rest of the URL up to the querystring
    * * Optional groups, i.e. `'foo(/:bar)'`
    *
    * @since 0.1.0
@@ -204,7 +201,7 @@ export default class Router extends DenaliObject implements RouterDSL {
     // Ensure optional trailing slashes
     normalizedPattern = `${ normalizedPattern }(/)`;
     // Add route
-    let ActionClass = this.container.factoryFor<Action>(`action:${ actionPath }`);
+    let ActionClass = lookup<Constructor<Action>>(`action:${ actionPath }`);
     let route = new Route(normalizedPattern);
     route.actionPath = actionPath;
     route.action = ActionClass;
@@ -221,11 +218,12 @@ export default class Router extends DenaliObject implements RouterDSL {
    * any).
    */
   urlFor(actionPath: string, data: any): string | boolean {
-    let action = this.container.factoryFor<Action>(`action:${ actionPath }`);
-    if (!action) {
+    let actionEntry = lookup<Constructor<Action>>(`action:${ actionPath }`, { loose: true });
+    if (actionEntry === false) {
       return false;
     }
 
+    let action = actionEntry; // because TS won't narrow the type in the forEach below
     let route: Route;
     forEach(this.routes, (routes) => {
       route = find(routes, { action });
@@ -299,17 +297,17 @@ export default class Router extends DenaliObject implements RouterDSL {
   }
 
   /**
-   * Create all the CRUD routes for a given resource and it's relationships. Based on the JSON-API
-   * recommendations for URL design.
+   * Create all the CRUD routes for a given resource and it's relationships.
+   * Based on the JSON-API recommendations for URL design.
    *
-   * The `options` argument lets you pass in `only` or `except` arrays to define exceptions. Action
-   * names included in `only` will be the only ones generated, while names included in `except` will
-   * be omitted.
+   * The `options` argument lets you pass in `only` or `except` arrays to
+   * define exceptions. Action names included in `only` will be the only ones
+   * generated, while names included in `except` will be omitted.
    *
    * Set `options.related = false` to disable relationship routes.
    *
-   * If no options are supplied, the following routes are generated (assuming a 'books' resource as
-   * an example):
+   * If no options are supplied, the following routes are generated (assuming a
+   * 'books' resource as an example):
    *
    *   * `GET /books`
    *   * `POST /books`
@@ -338,11 +336,12 @@ export default class Router extends DenaliObject implements RouterDSL {
     }
 
     let hasWhitelist = Boolean(options.only);
-    options.only = ensureArray(options.only);
-    options.except = ensureArray(options.except);
+    options.only = castArray(options.only);
+    options.except = castArray(options.except);
 
     /**
-     * Check if the given action should be generated based on the whitelist/blacklist options
+     * Check if the given action should be generated based on the
+     * whitelist/blacklist options
      */
     function include(action: string) {
       let whitelisted = options.only.includes(action);
@@ -376,9 +375,9 @@ export default class Router extends DenaliObject implements RouterDSL {
   [methodName: string]: any;
 
   /**
-   * Enables easy route namespacing. You can supply a method which takes a single argument that
-   * works just like the `router` argument in your `config/routes.js`, or you can use the return
-   * value just like the router.
+   * Enables easy route namespacing. You can supply a method which takes a
+   * single argument that works just like the `router` argument in your
+   * `config/routes.js`, or you can use the return value just like the router.
    *
    *   router.namespace('users', (namespace) => {
    *     namespace.get('sign-in');

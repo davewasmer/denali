@@ -1,50 +1,12 @@
-import findup = require('findup-sync');
-import * as tryRequire from 'try-require';
-import Container from '../metal/container';
-import Application from './application';
+import container from '../metal/container';
 import Resolver from '../metal/resolver';
+import Application from './application';
+import Loader from '@denali-js/loader';
 
 /**
- * Constructor options for Addon class
- *
- * @package runtime
- * @since 0.1.0
- */
-export interface AddonOptions {
-  environment: string;
-  dir: string;
-  container: Container;
-  pkg?: any;
-}
-
-/**
- * Addons are the fundamental unit of organization for Denali apps. The Application class is just a
- * specialized Addon, and each Addon can contain any amount of functionality.
- *
- * ## Structure
- *
- * Addons are packaged as npm modules for easy sharing. When Denali boots up, it searches your
- * node_modules for available Denali Addons (identified by the `denali-addon` keyword in the
- * package.json). Addons can be nested (i.e. an addon can itself depend on another addon).
- *
- * Each addon can be composed of one or several of the following parts:
- *
- *   * Config
- *   * Initializers
- *   * Middleware
- *   * App classes
- *   * Routes
- *
- * ## Load order
- *
- * After Denali discovers the available addons, it then merges them to form a unified application.
- * Addons higher in the dependency tree take precedence, and sibling addons can specify load order
- * via their package.json files:
- *
- *     "denali": {
- *       "before": [ "another-addon-name" ],
- *       "after": [ "cool-addon-name" ]
- *     }
+ * Addons are the fundamental unit of organization for Denali apps. The
+ * Application class is just a specialized Addon, and each Addon can contain
+ * any amount of functionality - each one is essentially a mini Denali app.
  *
  * @package runtime
  * @since 0.1.0
@@ -59,57 +21,36 @@ export default class Addon {
   environment: string;
 
   /**
-   * The root directory on the filesystem for this addon
-   *
-   * @since 0.1.0
+   * The loader scope for this addon
    */
-  dir: string;
+  loader: Loader;
 
   /**
-   * The package.json for this addon
-   *
-   * @since 0.1.0
+   * The resolver for this addon's loader scope
    */
-  pkg: any;
+  get resolver(): Resolver {
+    return this.loader.resolver;
+  }
 
-  /**
-   * The resolver instance to use with this addon.
-   *
-   * @since 0.1.0
-   */
-  resolver: Resolver;
-
-  /**
-   * The consuming application container instance
-   *
-   * @since 0.1.0
-   */
-  container: Container;
-
-  constructor(options: AddonOptions) {
-    this.container = options.container;
+  constructor(loader: Loader, options: { environment: string }) {
+    this.loader = loader;
     this.environment = options.environment;
-    this.dir = options.dir;
-    this.pkg = options.pkg || tryRequire(findup('package.json', { cwd: this.dir }));
-
-    this.resolver = this.resolver || new Resolver(this.dir);
-    this.container.addResolver(this.resolver);
-    this.container.register(`addon:${ this.pkg.name }@${ this.pkg.version }`, this);
+    container.register(`addon:${ this.name }`, this);
   }
 
   /**
-   * The name of the addon. Override this to use a different name than the package name for your
-   * addon.
+   * The name of the addon. Override this to use a different name than the
+   * package name for your addon.
    *
    * @since 0.1.0
    */
   get name(): string {
-    return (this.pkg && this.pkg.name) || 'anonymous-addon';
+    return `${ this.loader.pkgName }@${ this.loader.version }`;
   }
 
   /**
-   * A hook to perform any shutdown actions necessary to gracefully exit the application, i.e. close
-   * database/socket connections.
+   * A hook to perform any shutdown actions necessary to gracefully exit the
+   * application, i.e. close database/socket connections.
    *
    * @since 0.1.0
    */

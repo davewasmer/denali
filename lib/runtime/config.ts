@@ -1,16 +1,16 @@
 import Service from './service';
-import inject from '../metal/inject';
 import { get } from 'lodash';
+import { lookup } from '../metal/container';
 
 export default class ConfigService extends Service {
 
-  protected _config = inject<AppConfig>('config:environment');
+  protected _config = lookup<AppConfig>('config:environment');
 
   get environment(): string {
     return this._config.environment;
   }
 
-
+  // This nonsense basically gets us type info for the static config object up to 6 levels deep in nesting
   get<S extends AppConfig, T1 extends keyof S>(p1: T1): S[T1];
   get<S extends AppConfig, T1 extends keyof S, T2 extends keyof S[T1]>(p1: T1, p2: T2): S[T1][T2];
   get<S extends AppConfig, T1 extends keyof S, T2 extends keyof S[T1], T3 extends keyof S[T1][T2]>(p1: T1, p2: T2, p3: T3): S[T1][T2][T3];
@@ -24,6 +24,7 @@ export default class ConfigService extends Service {
     return get(this._config, path);
   }
 
+  // This nonsense basically gets us type info for the static config object up to 6 levels deep in nesting
   getWithDefault<S extends AppConfig, T1 extends keyof S>(p1: T1, defaultValue: any): S[T1];
   getWithDefault<S extends AppConfig, T1 extends keyof S, T2 extends keyof S[T1]>(p1: T1, p2: T2, defaultValue: any): S[T1][T2];
   getWithDefault<S extends AppConfig, T1 extends keyof S, T2 extends keyof S[T1], T3 extends keyof S[T1][T2]>(p1: T1, p2: T2, p3: T3, defaultValue: any): S[T1][T2][T3];

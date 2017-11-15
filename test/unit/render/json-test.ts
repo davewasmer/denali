@@ -1,104 +1,97 @@
 /* tslint:disable:completed-docs no-empty no-invalid-this member-access */
-import test from 'ava';
 import { isArray } from 'lodash';
-import { JSONSerializer, Model, attr, Container, MemoryAdapter, hasMany, Errors, hasOne } from 'denali';
+import { setupUnitTest, JSONSerializer, Model, attr, hasMany, Errors, hasOne } from 'denali';
 
-test.beforeEach((t) => {
-  t.context.container = new Container(__dirname);
-  t.context.container.register('orm-adapter:application', MemoryAdapter);
+// test.beforeEach((t) => {
+//   t.context.container = new Container();
+//   t.context.container.register('orm-adapter:application', MemoryAdapter);
+// });
+
+class Post extends Model {
+  static title = attr('string');
+  static content = attr('string');
+  static author = hasOne('user');
+  static comments = hasMany('comment');
+}
+
+class Comment extends Model {
+  static text = attr('string');
+  static publishedAt = attr('string');
+}
+
+const test = setupUnitTest('serializer:json-api', {
+  'orm-adapter:application': true,
+  'serializer:application': JSONSerializer,
+  'model:post': Post,
+  'model:comment': Comment
 });
 
 test('renders models as flat json structures', async (t) => {
-  let container = <Container>t.context.container;
-  container.register('serializer:application', class TestSerializer extends JSONSerializer {
+  class TestSerializer extends JSONSerializer {
     attributes = [ 'title' ];
     relationships = {};
-  });
-  container.register('model:post', class Post extends Model {
-    static title = attr('string');
-  });
-  let serializer = container.lookup('serializer:application');
-  let Post = container.factoryFor('model:post');
-  let post = await Post.create({ title: 'foo' }).save();
-  let result = await serializer.serialize(post, <any>{}, {});
+  }
+  let serializer = new TestSerializer();
+  let post = await Post.create({ title: 'foo' });
 
+  let result = await serializer.serialize(post, <any>{}, {});
   t.is(result.title, 'foo');
 });
 
 test('renders related records as embedded objects', async (t) => {
-  let container = <Container>t.context.container;
-  container.register('serializer:post', class PostSerializer extends JSONSerializer {
+  let { inject } = t.context;
+  class PostSerializer extends JSONSerializer {
     attributes = [ 'title' ];
     relationships = {
       comments: {
         strategy: 'embed'
       }
     };
-  });
-  container.register('serializer:comment', class CommentSerializer extends JSONSerializer {
+  }
+  inject('serializer:comment', class CommentSerializer extends JSONSerializer {
     attributes = [ 'text' ];
     relationships = {};
   });
-  container.register('model:post', class Post extends Model {
-    static title = attr('string');
-    static comments = hasMany('comment');
-  });
-  container.register('model:comment', class Comment extends Model {
-    static text = attr('string');
-  });
-  let Post = container.factoryFor('model:post');
-  let Comment = container.factoryFor('model:comment');
-  let serializer = container.lookup('serializer:post');
+  let serializer = new PostSerializer();
+  debugger;
+  let post = await Post.create({ title: 'foo' });
+  await post.addComment(await Comment.create({ text: 'bar' }));
 
-  let post = await Post.create({ title: 'foo' }).save();
-  await post.addComment(await Comment.create({ text: 'bar' }).save());
   let result = await serializer.serialize(post, <any>{}, {});
-
   t.true(isArray(result.comments));
   t.is(result.comments[0].text, 'bar');
 });
 
 test('renders related records as embedded ids', async (t) => {
-  let container = <Container>t.context.container;
-  container.register('serializer:post', class PostSerializer extends JSONSerializer {
+  let { inject } = t.context;
+  class PostSerializer extends JSONSerializer {
     attributes = [ 'title' ];
     relationships = {
       comments: {
         strategy: 'id'
       }
     };
-  });
-  container.register('serializer:comment', class CommentSerializer extends JSONSerializer {
+  }
+  inject('serializer:comment', class CommentSerializer extends JSONSerializer {
     attributes = [ 'text' ];
     relationships = {};
   });
-  container.register('model:post', class Post extends Model {
-    static title = attr('string');
-    static comments = hasMany('comment');
-  });
-  container.register('model:comment', class Comment extends Model {
-    static text = attr('string');
-  });
-  let Post = container.factoryFor('model:post');
-  let Comment = container.factoryFor('model:comment');
-  let serializer = container.lookup('serializer:post');
-
-  let post = await Post.create({ title: 'foo' }).save();
-  let comment = await Comment.create({ text: 'bar' }).save();
+  let serializer = new PostSerializer();
+  let post = await Post.create({ title: 'foo' });
+  let comment = await Comment.create({ text: 'bar' });
   await post.addComment(comment);
-  let result = await serializer.serialize(post, <any>{}, {});
 
+  let result = await serializer.serialize(post, <any>{}, {});
   t.true(isArray(result.comments));
   t.is(result.comments[0], comment.id);
 });
 
 test('renders errors', async (t) => {
-  let container = <Container>t.context.container;
-  container.register('serializer:application', class PostSerializer extends JSONSerializer {
+  class PostSerializer extends JSONSerializer {
     attributes: string[] = [];
     relationships = {};
-  });
-  let serializer = container.lookup('serializer:application');
+  }
+  let serializer = new PostSerializer();
 
   let result = await serializer.serialize(new Errors.InternalServerError('foo'), <any>{}, {});
   t.is(result.status, 500);
@@ -107,88 +100,59 @@ test('renders errors', async (t) => {
 });
 
 test('only renders whitelisted attributes', async (t) => {
-  let container = <Container>t.context.container;
-  container.register('serializer:post', class PostSerializer extends JSONSerializer {
+  class PostSerializer extends JSONSerializer {
     attributes = [ 'title' ];
     relationships = {};
-  });
-  container.register('model:post', class Post extends Model {
-    static title = attr('string');
-    static content = attr('string');
-  });
-  let Post = container.factoryFor('model:post');
-  let serializer = container.lookup('serializer:post');
+  }
+  let serializer = new PostSerializer();
+  let post = await Post.create({ title: 'foo', content: 'bar' });
 
-  let post = await Post.create({ title: 'foo', content: 'bar' }).save();
   let result = await serializer.serialize(post, <any>{}, {});
-
   t.is(result.title, 'foo');
   t.falsy(result.content);
 });
 
 test('only renders whitelisted relationships', async (t) => {
-  let container = <Container>t.context.container;
-  container.register('serializer:post', class PostSerializer extends JSONSerializer {
+  let { inject } = t.context;
+  class PostSerializer extends JSONSerializer {
     attributes = [ 'title' ];
     relationships = {
       comments: {
         strategy: 'id'
       }
     };
-  });
-  container.register('serializer:comment', class CommentSerializer extends JSONSerializer {
+  }
+  inject('serializer:comment', class CommentSerializer extends JSONSerializer {
     attributes = [ 'text' ];
     relationships = {};
   });
-  container.register('model:post', class Post extends Model {
-    static title = attr('string');
-    static author = hasOne('user');
-    static comments = hasMany('comment');
-  });
-  container.register('model:comment', class Comment extends Model {
-    static text = attr('string');
-  });
-  container.register('model:user', class Comment extends Model {});
-  let Post = container.factoryFor('model:post');
-  let serializer = container.lookup('serializer:post');
+  let serializer = new PostSerializer();
+  let post = await Post.create({ title: 'foo' });
 
-  let post = await Post.create({ title: 'foo' }).save();
   let result = await serializer.serialize(post, <any>{}, {});
-
   t.true(isArray(result.comments));
   t.falsy(result.author);
 });
 
 test('uses related serializers to render related records', async (t) => {
-  let container = <Container>t.context.container;
-  container.register('serializer:post', class PostSerializer extends JSONSerializer {
+  let { inject } = t.context;
+  class PostSerializer extends JSONSerializer {
     attributes = [ 'title' ];
     relationships = {
       comments: {
         strategy: 'embed'
       }
     };
-  });
-  container.register('serializer:comment', class CommentSerializer extends JSONSerializer {
+  }
+  inject('serializer:comment', class CommentSerializer extends JSONSerializer {
     attributes = [ 'text' ];
     relationships = {};
   });
-  container.register('model:post', class Post extends Model {
-    static title = attr('string');
-    static comments = hasMany('comment');
-  });
-  container.register('model:comment', class Comment extends Model {
-    static text = attr('string');
-    static publishedAt = attr('string');
-  });
-  let Post = container.factoryFor('model:post');
-  let Comment = container.factoryFor('model:comment');
-  let serializer = container.lookup('serializer:post');
+  let serializer = new PostSerializer();
+  let post = await Post.create({ title: 'foo' });
+  await post.addComment(await Comment.create({ text: 'bar', publishedAt: 'fizz' }));
 
-  let post = await Post.create({ title: 'foo' }).save();
-  await post.addComment(await Comment.create({ text: 'bar', publishedAt: 'fizz' }).save());
   let result = await serializer.serialize(post, <any>{}, {});
-
   t.true(isArray(result.comments));
   t.is(result.comments[0].text, 'bar');
   t.falsy(result.comments[0].publishedAt);

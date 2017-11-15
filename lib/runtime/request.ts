@@ -15,7 +15,8 @@ import * as uuid from 'uuid';
 import * as qs from 'querystring';
 
 /**
- * The Request class represents an incoming HTTP request (specifically, Node's IncomingMessage).
+ * The Request class represents an incoming HTTP request (specifically, Node's
+ * IncomingMessage).
  *
  * @package runtime
  * @since 0.1.0
@@ -23,7 +24,8 @@ import * as qs from 'querystring';
 export default class Request {
 
   /**
-   * A UUID generated unqiue to this request. Useful for tracing a request through the application.
+   * A UUID generated unqiue to this request. Useful for tracing a request
+   * through the application.
    *
    * @since 0.1.0
    */
@@ -37,8 +39,8 @@ export default class Request {
   route: Route;
 
   /**
-   * The name of the original action that was invoked - useful for error actions to create
-   * helpful debug messages.
+   * The name of the original action that was invoked - useful for error
+   * actions to create helpful debug messages.
    *
    * @since 0.1.0
    */

@@ -1,49 +1,60 @@
-import {
-  camelCase,
-  upperFirst,
-  uniq
-} from 'lodash';
+import { camelCase, upperFirst, uniq, constant } from 'lodash';
 import * as path from 'path';
-import * as fs from 'fs';
-import * as tryRequire from 'try-require';
 import { pluralize } from 'inflection';
-import requireDir from '../utils/require-dir';
 import * as assert from 'assert';
 import * as createDebug from 'debug';
+import Loader from '@denali-js/loader';
 
 interface RetrieveMethod<T> {
   (type: string, entry: string): T;
 }
 
 export interface AvailableForTypeMethod {
-  (type: string): { [modulePath: string]: any };
+  (type: string): string[];
 }
 
 export type Registry = Map<string, any>;
 
 export default class Resolver {
 
-  [key: string]: any;
+  /**
+   * The loader scope to retrieve from
+   */
+  loader: Loader;
 
   /**
-   * The root directory for this resolver to start from when searching for files
+   * The debug logger instance for this resolver - we create a separate
+   * instance per resolver to make it easier to trace resolutions.
    */
-  root: string;
+  debug: any;
+
+  /**
+   * The name of this resolver - typically the addon name
+   *
+   * @since 0.1.0
+   */
+  name: string;
 
   /**
    * The internal cache of available references
    */
   protected registry: Registry = new Map();
 
-  constructor(root: string) {
-    assert(root, 'You must supply a valid root path that the resolve should use to load from');
-    this.debug = createDebug(`silly-denali:resolver:${ root }`);
-    this.root = root;
+  constructor(loader?: Loader) {
+    assert(loader, 'You must supply a loader that the resolver should use to load from');
+    this.name = loader.pkgName;
+    this.debug = createDebug(`denali:resolver:${ this.name }`);
+    this.loader = loader;
   }
 
   /**
-   * Manually add a member to this resolver. Manually registered members take precedence over any
-   * retrieved from the filesystem.
+   * Manually add a member to this resolver. Manually registered members take
+   * precedence over any retrieved from the filesystem. This same pattern
+   * exists at the container level, but having it here allows an addon to
+   * specify a manual override _for it's own scope_, but not necessarily force
+   * it onto the consuming application
+   *
+   * @since 0.1.0
    */
   register(specifier: string, value: any) {
     assert(specifier.includes(':'), 'Container specifiers must be in "type:entry" format');
@@ -51,9 +62,11 @@ export default class Resolver {
   }
 
   /**
-   * Fetch the member matching the given parsedName. First checks for any manually registered
-   * members, then falls back to type specific retrieve methods that typically find the matching
-   * file on the filesystem.
+   * Fetch the member matching the given parsedName. First checks for any
+   * manually registered members, then falls back to type specific retrieve
+   * methods that typically find the matching file on the filesystem.
+   *
+   * @since 0.1.0
    */
   retrieve<T>(specifier: string): T {
     assert(specifier.includes(':'), 'Container specifiers must be in "type:entry" format');
@@ -63,9 +76,9 @@ export default class Resolver {
       this.debug(`cache hit, returning cached value`);
       return this.registry.get(specifier);
     }
-    let retrieveMethod = <RetrieveMethod<T>>this[`retrieve${ upperFirst(camelCase(type)) }`];
+    let retrieveMethod = <RetrieveMethod<T>>(<any>this)[`retrieve${ upperFirst(camelCase(type)) }`];
     if (!retrieveMethod) {
-      retrieveMethod = this.retrieveOther;
+      retrieveMethod = <RetrieveMethod<T>>this.retrieveOther;
     }
     this.debug(`retrieving via retrieve${ upperFirst(camelCase(type)) }`);
     let result = retrieveMethod.call(this, type, entry);
@@ -74,41 +87,44 @@ export default class Resolver {
     return result;
   }
 
+  protected _retrieve(type: string, entry: string, relativepath: string) {
+    this.debug(`attempting to retrieve ${ type }:${ entry } at ${ relativepath } from ${ this.name }`);
+    return this.loader.loadRelative('/', relativepath, constant(false));
+  }
+
   /**
    * Unknown types are assumed to exist underneath the `app/` folder
    */
   protected retrieveOther(type: string, entry: string) {
-    this.debug(`attempting to retrieve ${ type }:${ entry } from ${ path.join(this.root, 'app', pluralize(type), entry) }`);
-    return tryRequire(path.join(this.root, 'app', pluralize(type), entry));
+    return this._retrieve(type, entry, path.join('/app', pluralize(type), entry));
   }
 
   /**
    * App files are found in `app/*`
    */
   protected retrieveApp(type: string, entry: string) {
-    this.debug(`attempting to retrieve ${ type }:${ entry } from ${ path.join(this.root, 'app', entry) }`);
-    return tryRequire(path.join(this.root, 'app', entry));
+    return this._retrieve(type, entry, path.join('/app', entry));
   }
 
   /**
    * Config files are found in `config/`
    */
   protected retrieveConfig(type: string, entry: string) {
-    this.debug(`attempting to retrieve ${ type }:${ entry } from ${ path.join(this.root, 'config', entry) }`);
-    return tryRequire(path.join(this.root, 'config', entry));
+    return this._retrieve(type, entry, path.join('/config', entry));
   }
 
   /**
    * Initializer files are found in `config/initializers/`
    */
   protected retrieveInitializer(type: string, entry: string) {
-    this.debug(`attempting to retrieve ${ type }:${ entry } from ${ path.join(this.root, 'config', 'initializers', entry) }`);
-    return tryRequire(path.join(this.root, 'config', 'initializers', entry));
+    return this._retrieve(type, entry, path.join('/config', 'initializers', entry));
   }
 
   /**
-   * Retrieve all the entries for a given type. First checks for all manual registrations matching
-   * that type, then retrieves all members for that type (typically from the filesystem).
+   * Returns an array of entry names that are available from this resolver for
+   * the given type.
+   *
+   * @since 0.1.0
    */
   availableForType(type: string) {
     let registeredForType: string[] = [];
@@ -117,7 +133,7 @@ export default class Resolver {
         registeredForType.push(specifier);
       }
     });
-    let availableMethod = <AvailableForTypeMethod>this[`availableFor${ upperFirst(camelCase(type)) }`];
+    let availableMethod = <AvailableForTypeMethod>(<any>this)[`availableFor${ upperFirst(camelCase(type)) }`];
     if (!availableMethod) {
       availableMethod = this.availableForOther;
     }
@@ -126,50 +142,39 @@ export default class Resolver {
     return uniq(registeredForType.sort().concat(resolvedEntries.sort()));
   }
 
+  protected _availableForType(prefix: string): string[] {
+    let matchingFactories = Array.from(this.loader.factories.keys()).filter((moduleName) => {
+      return moduleName.startsWith(prefix);
+    });
+    return matchingFactories.map((factoryPath) => factoryPath.substring(prefix.length + 1));
+  }
+
   /**
    * Unknown types are assumed to exist in the `app/` folder
    */
   protected availableForOther(type: string) {
-    let typeDir = path.join(this.root, 'app', pluralize(type));
-    if (fs.existsSync(typeDir)) {
-      return Object.keys(requireDir(typeDir));
-    }
-    return [];
+    return this._availableForType(path.join('/app', pluralize(type)));
   }
 
   /**
    * App files are found in `app/*`
    */
   protected availableForApp(type: string, entry: string) {
-    let appDir = path.join(this.root, 'app');
-    if (fs.existsSync(appDir)) {
-      return Object.keys(requireDir(appDir, { recurse: false }));
-    }
-    return [];
+    return this._availableForType('/app');
   }
 
   /**
    * Config files are found in the `config/` folder. Initializers are _not_ included in this group
    */
   protected availableForConfig(type: string) {
-    let configDir = path.join(this.root, 'config');
-    if (fs.existsSync(configDir)) {
-      return Object.keys(requireDir(configDir)).filter((entry) => {
-        return entry.startsWith('initializers');
-      });
-    }
-    return [];
+    return this._availableForType('/config');
   }
 
   /**
    * Initializers files are found in the `config/initializers/` folder
    */
   protected availableForInitializer(type: string) {
-    let initializersDir = path.join(this.root, 'config', 'initializers');
-    if (fs.existsSync(initializersDir)) {
-      return Object.keys(requireDir(initializersDir));
-    }
-    return [];
+    return this._availableForType(path.join('/config', 'initializers'));
   }
 
 }

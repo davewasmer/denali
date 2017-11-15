@@ -1,7 +1,7 @@
-import { appAcceptanceTest } from 'denali';
+import { setupAcceptanceTest } from 'denali';
 import { inspect } from 'util';
 
-const test = appAcceptanceTest();
+const test = setupAcceptanceTest();
 
 test('exceptions are handled', async (t) => {
   let { app } = t.context;
