@@ -9,10 +9,9 @@ testing simpler. Here's a quick sample of what an acceptance test might look
 like:
 
 ```js
-import test from 'ava';
 import { appAcceptanceTest } from 'denali';
 
-appAcceptanceTest(test);
+const test = appAcceptanceTest();
 
 test('GET /posts/:id returns the requested post', async (t) => {
   let app = t.context.app;
@@ -25,16 +24,16 @@ test('GET /posts/:id returns the requested post', async (t) => {
 });
 ```
 
-## `appAcceptanceTest(test)`
+## `appAcceptanceTest()`
 
 This is the starting point of the Denali test helpers. When defining an
-acceptance test suite, just add `appAcceptanceTest()` to the top of the test file:
+acceptance test suite, just add `const test = appAcceptanceTest()` to the top of the test file
+to set up your test suite:
 
 ```js
-import test from 'ava';
 import { appAcceptanceTest } from 'denali';
 
-appAcceptanceTest(test);
+const test = appAcceptanceTest();
 
 test('GET /posts/:id returns the requested post', async (t) => {
   // ...
