@@ -21,7 +21,7 @@ export default function inject<T = any>(lookup: string): T {
 export function injectInstance(instance: any, container: Container) {
   let classMeta = container.metaFor(instance.constructor);
   if (!classMeta.injectionsCache) {
-    let injections: Dict<any> = {};
+    let injections: Dict<any> = { container };
     for (let key in instance) {
       let value = instance[key];
       if (isInjection(value)) {

@@ -1,6 +1,5 @@
 import mixin, { MixinApplicator } from './mixin';
 import Container from './container';
-import * as assert from 'assert';
 
 /**
  * The base object class for Denali classes. Adds mixin support.
@@ -28,11 +27,6 @@ export default class DenaliObject {
    * The application container instance
    */
   protected container: Container;
-
-  constructor(container: Container) {
-    assert(container, `You tried to instantiate ${ this.constructor.name } directly. This class is meant to be created and accessed via the container`);
-    this.container = container;
-  }
 
   /**
    * A hook that users should override for constructor-time logic so they don't have to worry about
