@@ -180,3 +180,5 @@ export function hasOne(relatedModelName: string, options?: any): HasOneRelations
 }
 
 export type RelationshipDescriptor = HasManyRelationshipDescriptor | HasOneRelationshipDescriptor;
+
+export type SchemaDescriptor = AttributeDescriptor | RelationshipDescriptor;

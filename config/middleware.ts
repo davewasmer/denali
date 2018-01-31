@@ -25,7 +25,7 @@ export default function baseMiddleware(router: Router, application: Application)
    * you must define set that middleware's root config property to `{ enabled: false }`
    */
   function isEnabled(prop: string): boolean {
-    return !config[prop] || (config[prop] && config[prop].enabled !== false);
+    return config.get(prop) == null || config.get(prop, 'enabled') !== false;
   }
 
   if (isEnabled('timing')) {
@@ -40,8 +40,8 @@ export default function baseMiddleware(router: Router, application: Application)
         return application.environment === 'test';
       }
     };
-    let format = (config.logging && config.logging.format) || defaultLoggingFormat;
-    let options = defaults(config.logging || {}, defaultLoggingOptions);
+    let format = config.getWithDefault('logging', 'format', defaultLoggingFormat);
+    let options = defaults(config.getWithDefault('logging', {}), defaultLoggingOptions);
     router.use(morgan(format, options));
 
     // Patch morgan to read from our non-express response
@@ -61,11 +61,11 @@ export default function baseMiddleware(router: Router, application: Application)
   }
 
   if (isEnabled('cookies')) {
-    router.use(cookies(config.cookies));
+    router.use(cookies(config.get('cookies')));
   }
 
   if (isEnabled('cors')) {
-    router.use(cors(config.cors));
+    router.use(cors(config.get('cors')));
   }
 
   if (isEnabled('xssFilter')) {

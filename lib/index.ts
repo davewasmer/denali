@@ -41,7 +41,7 @@ import mixin, {
   MixinFactory,
   MixinApplicator
 } from './metal/mixin';
-import container, { Container } from './metal/container';
+import container, { lookup, Container } from './metal/container';
 import Resolver from './metal/resolver';
 import DenaliObject from './metal/object';
 
@@ -98,6 +98,7 @@ export {
   MixinApplicator,
   Container,
   container,
+  lookup,
   Resolver,
   DenaliObject,
 

@@ -1,5 +1,4 @@
 import { IncomingMessage as IncomingHttpMessage, IncomingHttpHeaders } from 'http';
-import { IncomingMessage as IncomingHttpsMessage } from 'https';
 import { PassThrough, Readable } from 'stream';
 import * as url from 'url';
 import { Socket } from 'net';
@@ -24,7 +23,7 @@ export interface MockMessageOptions {
  *
  * @package test
  */
-export default class MockRequest extends PassThrough implements IncomingHttpMessage, IncomingHttpsMessage {
+export default class MockRequest extends PassThrough implements IncomingHttpMessage {
 
   httpVersion = '1.1';
   get httpVersionMajor() {

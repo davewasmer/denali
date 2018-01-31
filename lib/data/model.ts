@@ -2,19 +2,16 @@ import * as assert from 'assert';
 import * as util from 'util';
 import * as createDebug from 'debug';
 import { pluralize, singularize } from 'inflection';
-import { forEach, startCase, kebabCase, upperFirst } from 'lodash';
+import { forEach, startCase, kebabCase, upperFirst, pickBy } from 'lodash';
 import DenaliObject from '../metal/object';
 import { lookup } from '../metal/container';
 import ORMAdapter from './orm-adapter';
-import { AttributeDescriptor, HasOneRelationshipDescriptor, HasManyRelationshipDescriptor, Descriptor, RelationshipDescriptor } from './descriptors';
+import { AttributeDescriptor, Descriptor, RelationshipDescriptor, SchemaDescriptor } from './descriptors';
+import { Dict } from '../utils/types';
 
 const debug = createDebug('denali:model');
 
 const augmentedWithAccessors = Symbol();
-
-export interface ModelSchema {
-  [field: string]: AttributeDescriptor | HasOneRelationshipDescriptor | HasManyRelationshipDescriptor;
-}
 
 /**
  * The Model class is the core of Denali's unique approach to data and ORMs. It
@@ -48,7 +45,21 @@ export default class Model extends DenaliObject {
    * The schema definition for this model. Keys are the field names, and values
    * should be either `attr(...)', `hasOne(...)`, or `hasMany(...)`
    */
-  static schema: ModelSchema = {};
+  static schema: Dict<SchemaDescriptor> = {};
+
+  /**
+   * Returns the schema filtered down to just the attribute fields
+   */
+  static get attributes(): Dict<AttributeDescriptor> {
+    return pickBy(this.schema, (descriptor: AttributeDescriptor) => descriptor.isAttribute);
+  }
+
+  /**
+   * Returns the schema filtered down to just the relationship fields
+   */
+  static get relationships(): Dict<RelationshipDescriptor> {
+    return pickBy(this.schema, (descriptor: RelationshipDescriptor) => descriptor.isRelationship);
+  }
 
   private static _augmentWithSchemaAccessors() {
     if (this.prototype[augmentedWithAccessors]) {
