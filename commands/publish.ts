@@ -51,7 +51,7 @@ export default class PublishCommand extends Command {
   protected async build() {
     await spinner.start('Building');
     try {
-      await run('npm run build', {});
+      await run('npm run build -- --environment production', {});
     } catch (error) {
       await spinner.fail('Build failed, halting publish');
       throw error;
