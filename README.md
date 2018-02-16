@@ -49,7 +49,7 @@ But rather than a single controller class that responds to many different
 endpoints, an Action class is responsible for responding to requests against
 a single endpoint (URL + method) only. The result is powerful - since the Action
 class directly and completely represents the app's response handler, we can use
-expressive declarative syntax to succicently define behaviors.
+expressive declarative syntax to succinctly define behaviors.
 
 ## Getting Started
 
