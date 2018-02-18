@@ -58,3 +58,9 @@ denali server --debug
 This will run the server and watch your code changes, and give you a URL to open so you can debug your app/addon
 using Chrome DevTools. Once you visit the URL, the app will start running. From there you can set breakpoints and
 call your API endpoints to trigger the breakpoints.
+
+To mimic `node --inspect-brk` you can use:
+
+```sh
+denali server --debug-brk
+```
