@@ -42,7 +42,7 @@ export default class ConsoleCommand extends Command {
       printSlowTrees: argv.printSlowTrees
     });
     let application = await project.createApplication();
-    if (application.config.get('eenvironment') === 'production') {
+    if (application.config.get('environment') === 'production') {
       ui.warn(rewrap`WARNING: Your console is running in production environment, meaning your
       production configuration is being used. This means your app is likely connecting to live,
       production database. Use caution!`);
