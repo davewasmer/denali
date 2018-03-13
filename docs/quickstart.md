@@ -276,7 +276,7 @@ import ApplicationModel from './application';
 export default class Post extends ApplicationModel {
 
   static schema = {
-    title: attr('strign') // <- add this
+    title: attr('string') // <- add this
   };
 
 }
