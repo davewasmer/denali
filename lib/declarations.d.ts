@@ -6,7 +6,7 @@ declare module "ware";
 declare module "try-require";
 declare module "wordwrap";
 declare module "command-exists";
-declare module "cli-table2";
+declare module "cli-table3";
 declare module "read-pkg";
 declare module "protochain";
 declare module "tree-crawl";

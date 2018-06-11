@@ -1,4 +1,4 @@
-import * as CliTable from 'cli-table2';
+import * as CliTable from 'cli-table3';
 import { ui, Command, Project, unwrap } from '@denali-js/cli';
 import Application from '../lib/runtime/application';
 
