@@ -83,6 +83,24 @@ test('availableForType() returns all registered instances of a type', async (t) 
   t.deepEqual(container.availableForType('foo'), ['a', 'b', 'c', 'd']);
 });
 
+test('the resolver order should not be changed by lookup methods', async (t) => {
+  const container: Container = t.context.subject();
+
+  const loaderMock = (name : string) => ({
+    retrieve: () => name,
+    loadRelative: () => name,
+    factories: new Map(),
+  }) as any;
+
+  container.loadBundleScope(loaderMock('l1'));
+  container.loadBundleScope(loaderMock('l2'));
+
+  t.deepEqual(container.lookup('foo:l1', { raw: true }), 'l1');
+  container.availableForType('foo');
+  t.deepEqual(container.lookup('foo:l1', { raw: true }), 'l1');
+  t.deepEqual(container.lookup('foo:l1', { raw: true }), 'l1');
+});
+
 test('falls back to `fallbacks` specifiers if original specifier is not found', async (t) => {
   let container: Container = t.context.subject();
   container.setOption('foo', 'fallbacks', [ 'foo:application' ]);
