@@ -2,8 +2,11 @@ import {
   identity,
   padStart
 } from 'lodash';
-import chalk from 'chalk';
+import * as chalk from 'chalk';
+import * as moment from 'moment';
 import DenaliObject from '../metal/object';
+import inject from '../metal/inject';
+import ConfigService from './config';
 
 export type LogLevel = 'info' | 'warn' | 'error';
 
@@ -15,6 +18,7 @@ export type LogLevel = 'info' | 'warn' | 'error';
  * @since 0.1.0
  */
 export default class Logger extends DenaliObject {
+  config = inject<ConfigService>('service:config');
 
   /**
    * Default log level if none specified.
@@ -89,6 +93,7 @@ export default class Logger extends DenaliObject {
     if (this.levels.indexOf(level) === -1) {
       level = this.loglevel;
     }
+
     let padLength = this.levels.reduce((n: number, label) => Math.max(n, label.length), null);
     let levelLabel = padStart(level.toUpperCase(), padLength);
     if (this.colorize) {
@@ -96,18 +101,30 @@ export default class Logger extends DenaliObject {
       msg = colorizer(msg);
       levelLabel = colorizer(levelLabel);
     }
+
     let parts: string[] = [];
     if (this.timestamps) {
-      parts.push(`[${ (new Date()).toISOString() }]`);
+      let timestamp;
+
+      if (this.config.environment !== 'production') {
+        // Prints Local time in ISO8601 format with fractional seconds.
+        timestamp = moment().format('YYYY-MM-DDTHH:mm:ss.SSSZ');
+      } else {
+        // Prints UTC timestamp
+        timestamp = moment().toISOString();
+      }
+      
+      parts.push(`[${ timestamp }]`);
     }
     parts.push(levelLabel);
     parts.push(msg);
-    /* tslint:disable:no-console no-debugger */
-    console.log(parts.join(' '));
-    if (level === 'error') {
-      debugger;
-    }
+    
     /* tslint:enable:no-console no-debugger*/
+    console.log(parts.join(' '));
+    if (level === 'error') {	
+      debugger;	
+    }
+    /* tslint:disable:no-console no-debugger */
   }
 
 }
